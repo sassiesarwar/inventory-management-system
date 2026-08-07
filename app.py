@@ -1,13 +1,18 @@
 from flask import Flask, render_template, request, redirect
 import mysql.connector
 
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
 app = Flask(__name__)
 
 def get_db_connection():
     connection = mysql.connector.connect(
         host="localhost",
         user="root",
-        password="Sassycs09@gmail.com",
+        password=os.getenv("DB_PASSWORD"),
         database="inventory_db"
     )
     return connection
