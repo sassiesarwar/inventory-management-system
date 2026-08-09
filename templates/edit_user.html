@@ -1,25 +1,20 @@
-<!DOCTYPE html>
-<html>
-<head><title>Edit User</title></head>
-<body>
-    <h1>Edit User</h1>
-    <form action="/edit-user/{{ user[0] }}" method="POST">
-        <label>Username:</label><br>
-        <input type="text" name="username" value="{{ user[1] }}" required><br><br>
-
-        <label>Full Name:</label><br>
-        <input type="text" name="full_name" value="{{ user[3] }}"><br><br>
-
-        <label>Role:</label><br>
-        <select name="role">
-            <option value="staff" {% if user[4]=='staff' %}selected{% endif %}>Staff</option>
-            <option value="admin" {% if user[4]=='admin' %}selected{% endif %}>Admin</option>
-        </select><br><br>
-
-        <label>Email:</label><br>
-        <input type="email" name="email" value="{{ user[5] }}"><br><br>
-
-        <button type="submit">Update User</button>
-    </form>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<h2>Edit User</h2>
+<div class="card shadow-sm p-4" style="max-width: 500px;">
+<form method="POST">
+    <div class="mb-3"><label class="form-label">Username</label>
+    <input type="text" class="form-control" name="username" value="{{ user[1] }}" required></div>
+    <div class="mb-3"><label class="form-label">Full Name</label>
+    <input type="text" class="form-control" name="full_name" value="{{ user[3] }}"></div>
+    <div class="mb-3"><label class="form-label">Role</label>
+    <select name="role" class="form-select">
+        <option value="staff" {% if user[4]=='staff' %}selected{% endif %}>Staff</option>
+        <option value="admin" {% if user[4]=='admin' %}selected{% endif %}>Admin</option>
+    </select></div>
+    <div class="mb-3"><label class="form-label">Email</label>
+    <input type="email" class="form-control" name="email" value="{{ user[5] }}"></div>
+    <button type="submit" class="btn btn-primary">Update User</button>
+</form>
+</div>
+{% endblock %}

@@ -1,16 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head><title>Edit Category</title></head>
-<body>
-    <h1>Edit Category</h1>
-    <form action="/edit-category/{{ category[0] }}" method="POST">
-        <label>Category Name:</label><br>
-        <input type="text" name="category_name" value="{{ category[1] }}" required><br><br>
-
-        <label>Description:</label><br>
-        <input type="text" name="description" value="{{ category[2] }}"><br><br>
-
-        <button type="submit">Update Category</button>
-    </form>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<h2>Edit Category</h2>
+<div class="card shadow-sm p-4" style="max-width: 500px;">
+<form method="POST">
+    <div class="mb-3"><label class="form-label">Category Name</label>
+    <input type="text" class="form-control" name="category_name" value="{{ category[1] }}" required></div>
+    <div class="mb-3"><label class="form-label">Description</label>
+    <input type="text" class="form-control" name="description" value="{{ category[2] }}"></div>
+    <button type="submit" class="btn btn-primary">Update Category</button>
+</form>
+</div>
+{% endblock %}

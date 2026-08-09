@@ -1,31 +1,21 @@
-<!DOCTYPE html>
-<html>
-<head><title>All Suppliers</title></head>
-<body>
-    <h1>Supplier List</h1>
-    <a href="/add-supplier">+ Add New Supplier</a>
-    <table border="1" cellpadding="8">
-        <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Contact</th>
-            <th>Phone</th>
-            <th>Email</th>
-            <th>Actions</th>
-        </tr>
-        {% for sup in suppliers %}
-        <tr>
-            <td>{{ sup[0] }}</td>
-            <td>{{ sup[1] }}</td>
-            <td>{{ sup[2] }}</td>
-            <td>{{ sup[3] }}</td>
-            <td>{{ sup[4] }}</td>
-            <td>
-                <a href="/edit-supplier/{{ sup[0] }}">Edit</a> |
-                <a href="/delete-supplier/{{ sup[0] }}">Delete</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Supplier List</h2>
+    <a href="/add-supplier" class="btn btn-primary">+ Add New Supplier</a>
+</div>
+<table class="table table-striped table-hover shadow-sm bg-white rounded">
+    <thead class="table-dark"><tr><th>ID</th><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for sup in suppliers %}
+    <tr>
+        <td>{{ sup[0] }}</td><td>{{ sup[1] }}</td><td>{{ sup[2] }}</td><td>{{ sup[3] }}</td><td>{{ sup[4] }}</td>
+        <td>
+            <a href="/edit-supplier/{{ sup[0] }}" class="btn btn-sm btn-outline-primary">Edit</a>
+            <a href="/delete-supplier/{{ sup[0] }}" class="btn btn-sm btn-outline-danger">Delete</a>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

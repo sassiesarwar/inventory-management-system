@@ -1,18 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head><title>Add Category</title></head>
-<body>
-    <h1>Add New Category</h1>
-    <form action="/add-category" method="POST">
-        <label>Category Name:</label><br>
-        <input type="text" name="category_name" required><br><br>
-
-        <label>Description:</label><br>
-        <input type="text" name="description"><br><br>
-
-        <button type="submit">Add Category</button>
-    </form>
-    <br>
-    <a href="/view-categories">View All Categories</a>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<h2>Add New Category</h2>
+<div class="card shadow-sm p-4" style="max-width: 500px;">
+<form method="POST">
+    <div class="mb-3"><label class="form-label">Category Name</label>
+    <input type="text" class="form-control" name="category_name" required></div>
+    <div class="mb-3"><label class="form-label">Description</label>
+    <input type="text" class="form-control" name="description"></div>
+    <button type="submit" class="btn btn-primary">Add Category</button>
+</form>
+</div>
+{% endblock %}

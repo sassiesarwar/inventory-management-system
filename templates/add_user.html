@@ -1,30 +1,21 @@
-<!DOCTYPE html>
-<html>
-<head><title>Add User</title></head>
-<body>
-    <h1>Add New User</h1>
-    <form action="/add-user" method="POST">
-        <label>Username:</label><br>
-        <input type="text" name="username" required><br><br>
-
-        <label>Password:</label><br>
-        <input type="password" name="password" required><br><br>
-
-        <label>Full Name:</label><br>
-        <input type="text" name="full_name"><br><br>
-
-        <label>Role:</label><br>
-        <select name="role">
-            <option value="staff">Staff</option>
-            <option value="admin">Admin</option>
-        </select><br><br>
-
-        <label>Email:</label><br>
-        <input type="email" name="email"><br><br>
-
-        <button type="submit">Add User</button>
-    </form>
-    <br>
-    <a href="/view-users">View All Users</a>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<h2>Add New User</h2>
+<div class="card shadow-sm p-4" style="max-width: 500px;">
+<form method="POST">
+    <div class="mb-3"><label class="form-label">Username</label>
+    <input type="text" class="form-control" name="username" required></div>
+    <div class="mb-3"><label class="form-label">Password</label>
+    <input type="password" class="form-control" name="password" required></div>
+    <div class="mb-3"><label class="form-label">Full Name</label>
+    <input type="text" class="form-control" name="full_name"></div>
+    <div class="mb-3"><label class="form-label">Role</label>
+    <select name="role" class="form-select">
+        <option value="staff">Staff</option><option value="admin">Admin</option>
+    </select></div>
+    <div class="mb-3"><label class="form-label">Email</label>
+    <input type="email" class="form-control" name="email"></div>
+    <button type="submit" class="btn btn-primary">Add User</button>
+</form>
+</div>
+{% endblock %}
