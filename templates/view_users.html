@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head><title>All Users</title></head>
+<body>
+    <h1>User List</h1>
+    <a href="/add-user">+ Add New User</a>
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Full Name</th>
+            <th>Role</th>
+            <th>Email</th>
+            <th>Actions</th>
+        </tr>
+        {% for u in users %}
+        <tr>
+            <td>{{ u[0] }}</td>
+            <td>{{ u[1] }}</td>
+            <td>{{ u[3] }}</td>
+            <td>{{ u[4] }}</td>
+            <td>{{ u[5] }}</td>
+            <td>
+                <a href="/edit-user/{{ u[0] }}">Edit</a> |
+                <a href="/delete-user/{{ u[0] }}">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

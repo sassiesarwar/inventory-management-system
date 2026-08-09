@@ -4,6 +4,8 @@ import mysql.connector
 from dotenv import load_dotenv
 import os
 
+from werkzeug.security import generate_password_hash
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -221,6 +223,177 @@ def delete_supplier(id):
     conn.commit()
     conn.close()
     return redirect('/view-suppliers')
+
+@app.route('/add-purchase-order', methods=['GET', 'POST'])
+def add_purchase_order():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        supplier_id = request.form['supplier_id']
+        product_id = request.form['product_id']
+        quantity = request.form['quantity']
+        unit_cost = request.form['unit_cost']
+        total = float(quantity) * float(unit_cost)
+
+        cursor.execute(
+            "INSERT INTO purchase_order (supplier_id, order_date, status, total_amount) VALUES (%s, CURDATE(), 'pending', %s)",
+            (supplier_id, total)
+        )
+        conn.commit()
+        po_id = cursor.lastrowid
+
+        cursor.execute(
+            "INSERT INTO purchase_order_item (purchase_order_id, product_id, quantity, unit_cost) VALUES (%s, %s, %s, %s)",
+            (po_id, product_id, quantity, unit_cost)
+        )
+        conn.commit()
+        conn.close()
+        return redirect('/view-purchase-orders')
+
+    cursor.execute("SELECT * FROM supplier")
+    suppliers = cursor.fetchall()
+    cursor.execute("SELECT * FROM product")
+    products = cursor.fetchall()
+    conn.close()
+    return render_template('add_purchase_order.html', suppliers=suppliers, products=products)
+
+
+@app.route('/view-purchase-orders')
+def view_purchase_orders():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT po.purchase_order_id, s.supplier_name, p.product_name, 
+               poi.quantity, po.status, po.order_date
+        FROM purchase_order po
+        JOIN supplier s ON po.supplier_id = s.supplier_id
+        JOIN purchase_order_item poi ON po.purchase_order_id = poi.purchase_order_id
+        JOIN product p ON poi.product_id = p.product_id
+    """)
+    orders = cursor.fetchall()
+    conn.close()
+    return render_template('view_purchase_orders.html', orders=orders)
+
+@app.route('/add-user', methods=['GET', 'POST'])
+def add_user():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        full_name = request.form['full_name']
+        role = request.form['role']
+        email = request.form['email']
+
+        hashed_password = generate_password_hash(password)
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO user (username, password_hash, full_name, role, email) VALUES (%s, %s, %s, %s, %s)",
+            (username, hashed_password, full_name, role, email)
+        )
+        conn.commit()
+        conn.close()
+        return redirect('/view-users')
+
+    return render_template('add_user.html')
+
+
+@app.route('/view-users')
+def view_users():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM user")
+    users = cursor.fetchall()
+    conn.close()
+    return render_template('view_users.html', users=users)
+
+
+@app.route('/edit-user/<int:id>', methods=['GET', 'POST'])
+def edit_user(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        username = request.form['username']
+        full_name = request.form['full_name']
+        role = request.form['role']
+        email = request.form['email']
+
+        cursor.execute(
+            "UPDATE user SET username=%s, full_name=%s, role=%s, email=%s WHERE user_id=%s",
+            (username, full_name, role, email, id)
+        )
+        conn.commit()
+        conn.close()
+        return redirect('/view-users')
+
+    cursor.execute("SELECT * FROM user WHERE user_id=%s", (id,))
+    user = cursor.fetchone()
+    conn.close()
+    return render_template('edit_user.html', user=user)
+
+
+@app.route('/delete-user/<int:id>')
+def delete_user(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM user WHERE user_id=%s", (id,))
+    conn.commit()
+    conn.close()
+    return redirect('/view-users')
+
+@app.route('/add-stock-transaction', methods=['GET', 'POST'])
+def add_stock_transaction():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        product_id = request.form['product_id']
+        transaction_type = request.form['transaction_type']
+        quantity = int(request.form['quantity'])
+        reference = request.form['reference']
+
+        cursor.execute(
+            "INSERT INTO stock_transaction (product_id, transaction_type, quantity, reference) VALUES (%s, %s, %s, %s)",
+            (product_id, transaction_type, quantity, reference)
+        )
+
+        if transaction_type == 'IN':
+            cursor.execute(
+                "UPDATE product SET quantity_in_stock = quantity_in_stock + %s WHERE product_id = %s",
+                (quantity, product_id)
+            )
+        else:
+            cursor.execute(
+                "UPDATE product SET quantity_in_stock = quantity_in_stock - %s WHERE product_id = %s",
+                (quantity, product_id)
+            )
+
+        conn.commit()
+        conn.close()
+        return redirect('/view-stock-transactions')
+
+    cursor.execute("SELECT * FROM product")
+    products = cursor.fetchall()
+    conn.close()
+    return render_template('add_stock_transaction.html', products=products)
+
+
+@app.route('/view-stock-transactions')
+def view_stock_transactions():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT st.transaction_id, p.product_name, st.transaction_type, 
+               st.quantity, st.transaction_date, st.reference
+        FROM stock_transaction st
+        JOIN product p ON st.product_id = p.product_id
+        ORDER BY st.transaction_date DESC
+    """)
+    transactions = cursor.fetchall()
+    conn.close()
+    return render_template('view_stock_transactions.html', transactions=transactions)
 
 if __name__ == '__main__':
     app.run(debug=True)

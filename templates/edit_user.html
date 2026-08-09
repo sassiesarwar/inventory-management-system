@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head><title>Edit User</title></head>
+<body>
+    <h1>Edit User</h1>
+    <form action="/edit-user/{{ user[0] }}" method="POST">
+        <label>Username:</label><br>
+        <input type="text" name="username" value="{{ user[1] }}" required><br><br>
+
+        <label>Full Name:</label><br>
+        <input type="text" name="full_name" value="{{ user[3] }}"><br><br>
+
+        <label>Role:</label><br>
+        <select name="role">
+            <option value="staff" {% if user[4]=='staff' %}selected{% endif %}>Staff</option>
+            <option value="admin" {% if user[4]=='admin' %}selected{% endif %}>Admin</option>
+        </select><br><br>
+
+        <label>Email:</label><br>
+        <input type="email" name="email" value="{{ user[5] }}"><br><br>
+
+        <button type="submit">Update User</button>
+    </form>
+</body>
+</html>

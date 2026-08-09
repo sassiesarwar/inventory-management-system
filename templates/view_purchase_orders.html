@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head><title>Purchase Orders</title></head>
+<body>
+    <h1>Purchase Order List</h1>
+    <a href="/add-purchase-order">+ Create New Order</a>
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>Order ID</th>
+            <th>Supplier</th>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Status</th>
+            <th>Order Date</th>
+        </tr>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order[0] }}</td>
+            <td>{{ order[1] }}</td>
+            <td>{{ order[2] }}</td>
+            <td>{{ order[3] }}</td>
+            <td>{{ order[4] }}</td>
+            <td>{{ order[5] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
