@@ -155,5 +155,72 @@ def delete_category(id):
     conn.close()
     return redirect('/view-categories')
 
+@app.route('/add-supplier', methods=['GET', 'POST'])
+def add_supplier():
+    if request.method == 'POST':
+        supplier_name = request.form['supplier_name']
+        contact_person = request.form['contact_person']
+        phone = request.form['phone']
+        email = request.form['email']
+        address = request.form['address']
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO supplier (supplier_name, contact_person, phone, email, address) VALUES (%s, %s, %s, %s, %s)",
+            (supplier_name, contact_person, phone, email, address)
+        )
+        conn.commit()
+        conn.close()
+        return redirect('/view-suppliers')
+
+    return render_template('add_supplier.html')
+
+
+@app.route('/view-suppliers')
+def view_suppliers():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM supplier")
+    suppliers = cursor.fetchall()
+    conn.close()
+    return render_template('view_suppliers.html', suppliers=suppliers)
+
+
+@app.route('/edit-supplier/<int:id>', methods=['GET', 'POST'])
+def edit_supplier(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        supplier_name = request.form['supplier_name']
+        contact_person = request.form['contact_person']
+        phone = request.form['phone']
+        email = request.form['email']
+        address = request.form['address']
+
+        cursor.execute(
+            "UPDATE supplier SET supplier_name=%s, contact_person=%s, phone=%s, email=%s, address=%s WHERE supplier_id=%s",
+            (supplier_name, contact_person, phone, email, address, id)
+        )
+        conn.commit()
+        conn.close()
+        return redirect('/view-suppliers')
+
+    cursor.execute("SELECT * FROM supplier WHERE supplier_id=%s", (id,))
+    supplier = cursor.fetchone()
+    conn.close()
+    return render_template('edit_supplier.html', supplier=supplier)
+
+
+@app.route('/delete-supplier/<int:id>')
+def delete_supplier(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM supplier WHERE supplier_id=%s", (id,))
+    conn.commit()
+    conn.close()
+    return redirect('/view-suppliers')
+
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head><title>All Suppliers</title></head>
+<body>
+    <h1>Supplier List</h1>
+    <a href="/add-supplier">+ Add New Supplier</a>
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Actions</th>
+        </tr>
+        {% for sup in suppliers %}
+        <tr>
+            <td>{{ sup[0] }}</td>
+            <td>{{ sup[1] }}</td>
+            <td>{{ sup[2] }}</td>
+            <td>{{ sup[3] }}</td>
+            <td>{{ sup[4] }}</td>
+            <td>
+                <a href="/edit-supplier/{{ sup[0] }}">Edit</a> |
+                <a href="/delete-supplier/{{ sup[0] }}">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
