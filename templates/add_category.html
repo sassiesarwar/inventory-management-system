@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><title>Add Category</title></head>
+<body>
+    <h1>Add New Category</h1>
+    <form action="/add-category" method="POST">
+        <label>Category Name:</label><br>
+        <input type="text" name="category_name" required><br><br>
+
+        <label>Description:</label><br>
+        <input type="text" name="description"><br><br>
+
+        <button type="submit">Add Category</button>
+    </form>
+    <br>
+    <a href="/view-categories">View All Categories</a>
+</body>
+</html>

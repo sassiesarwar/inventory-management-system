@@ -94,6 +94,66 @@ def delete_product(id):
     conn.commit()
     conn.close()
     return redirect('/view-products')
+@app.route('/add-category', methods=['GET', 'POST'])
+def add_category():
+    if request.method == 'POST':
+        category_name = request.form['category_name']
+        description = request.form['description']
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO category (category_name, description) VALUES (%s, %s)",
+            (category_name, description)
+        )
+        conn.commit()
+        conn.close()
+        return redirect('/view-categories')
+
+    return render_template('add_category.html')
+
+
+@app.route('/view-categories')
+def view_categories():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM category")
+    categories = cursor.fetchall()
+    conn.close()
+    return render_template('view_categories.html', categories=categories)
+
+
+@app.route('/edit-category/<int:id>', methods=['GET', 'POST'])
+def edit_category(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        category_name = request.form['category_name']
+        description = request.form['description']
+
+        cursor.execute(
+            "UPDATE category SET category_name=%s, description=%s WHERE category_id=%s",
+            (category_name, description, id)
+        )
+        conn.commit()
+        conn.close()
+        return redirect('/view-categories')
+
+    cursor.execute("SELECT * FROM category WHERE category_id=%s", (id,))
+    category = cursor.fetchone()
+    conn.close()
+    return render_template('edit_category.html', category=category)
+
+
+@app.route('/delete-category/<int:id>')
+def delete_category(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM category WHERE category_id=%s", (id,))
+    conn.commit()
+    conn.close()
+    return redirect('/view-categories')
 
 if __name__ == '__main__':
     app.run(debug=True)

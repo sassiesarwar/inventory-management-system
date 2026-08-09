@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head><title>All Categories</title></head>
+<body>
+    <h1>Category List</h1>
+    <a href="/add-category">+ Add New Category</a>
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Actions</th>
+        </tr>
+        {% for cat in categories %}
+        <tr>
+            <td>{{ cat[0] }}</td>
+            <td>{{ cat[1] }}</td>
+            <td>{{ cat[2] }}</td>
+            <td>
+                <a href="/edit-category/{{ cat[0] }}">Edit</a> |
+                <a href="/delete-category/{{ cat[0] }}">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
