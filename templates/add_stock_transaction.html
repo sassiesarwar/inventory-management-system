@@ -1,31 +1,21 @@
-<!DOCTYPE html>
-<html>
-<head><title>Record Stock Transaction</title></head>
-<body>
-    <h1>Record Stock Transaction</h1>
-    <form action="/add-stock-transaction" method="POST">
-        <label>Product:</label><br>
-        <select name="product_id" required>
-            {% for prod in products %}
-            <option value="{{ prod[0] }}">{{ prod[1] }}</option>
-            {% endfor %}
-        </select><br><br>
-
-        <label>Transaction Type:</label><br>
-        <select name="transaction_type" required>
-            <option value="IN">Stock IN</option>
-            <option value="OUT">Stock OUT</option>
-        </select><br><br>
-
-        <label>Quantity:</label><br>
-        <input type="number" name="quantity" required><br><br>
-
-        <label>Reference/Reason:</label><br>
-        <input type="text" name="reference" placeholder="e.g., Sold to customer, New stock arrival"><br><br>
-
-        <button type="submit">Record Transaction</button>
-    </form>
-    <br>
-    <a href="/view-stock-transactions">View All Transactions</a>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<h2>Record Stock Transaction</h2>
+<div class="card p-4" style="max-width: 500px;">
+<form method="POST">
+    <div class="mb-3"><label class="form-label">Product</label>
+    <select name="product_id" class="form-select" required>
+        {% for prod in products %}<option value="{{ prod[0] }}">{{ prod[1] }}</option>{% endfor %}
+    </select></div>
+    <div class="mb-3"><label class="form-label">Transaction Type</label>
+    <select name="transaction_type" class="form-select" required>
+        <option value="IN">Stock IN</option><option value="OUT">Stock OUT</option>
+    </select></div>
+    <div class="mb-3"><label class="form-label">Quantity</label>
+    <input type="number" class="form-control" name="quantity" required></div>
+    <div class="mb-3"><label class="form-label">Reference/Reason</label>
+    <input type="text" class="form-control" name="reference"></div>
+    <button type="submit" class="btn btn-primary">Record Transaction</button>
+</form>
+</div>
+{% endblock %}

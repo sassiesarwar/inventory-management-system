@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Stock Transaction History</h2>
-    <a href="/add-stock-transaction" class="btn btn-primary">+ Record New Transaction</a>
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div><h2>Stock Transactions</h2><p>History of all stock movements</p></div>
+    <a href="/add-stock-transaction" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Record Transaction</a>
 </div>
-<table class="table table-striped table-hover shadow-sm bg-white rounded">
-    <thead class="table-dark"><tr><th>ID</th><th>Product</th><th>Type</th><th>Quantity</th><th>Date</th><th>Reference</th></tr></thead>
+<table class="table table-hover">
+    <thead><tr><th>ID</th><th>Product</th><th>Type</th><th>Quantity</th><th>Date</th><th>Reference</th></tr></thead>
     <tbody>
     {% for t in transactions %}
     <tr>
         <td>{{ t[0] }}</td><td>{{ t[1] }}</td>
-        <td>{% if t[2]=='IN' %}<span class="badge bg-success">IN</span>{% else %}<span class="badge bg-danger">OUT</span>{% endif %}</td>
+        <td>{% if t[2]=='IN' %}<span class="badge" style="background:#DCFCE7;color:#059669;">IN</span>{% else %}<span class="badge" style="background:#FEE2E2;color:#DC2626;">OUT</span>{% endif %}</td>
         <td>{{ t[3] }}</td><td>{{ t[4] }}</td><td>{{ t[5] }}</td>
     </tr>
     {% endfor %}

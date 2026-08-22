@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h2>Dashboard</h2>
+    <p>Overview of your inventory system</p>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-basket3"></i></div>
+            <div><div class="stat-number">{{ total_products }}</div><div class="stat-label">Total Products</div></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#DC2626;"><i class="bi bi-exclamation-triangle"></i></div>
+            <div><div class="stat-number">{{ low_stock_count }}</div><div class="stat-label">Low Stock Items</div></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#F59E0B;"><i class="bi bi-receipt"></i></div>
+            <div><div class="stat-number">{{ pending_orders }}</div><div class="stat-label">Pending Orders</div></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#059669;"><i class="bi bi-truck"></i></div>
+            <div><div class="stat-number">{{ total_suppliers }}</div><div class="stat-label">Total Suppliers</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="card p-4">
+    <h5 class="mb-3">Quick Links</h5>
+    <a href="/add-product" class="btn btn-outline-primary me-2">+ Add Product</a>
+    <a href="/add-purchase-order" class="btn btn-outline-primary me-2">+ Create Purchase Order</a>
+    <a href="/add-stock-transaction" class="btn btn-outline-primary">+ Record Stock Transaction</a>
+</div>
+
+{% endblock %}

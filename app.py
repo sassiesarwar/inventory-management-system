@@ -21,7 +21,7 @@ def get_db_connection():
 
 @app.route('/')
 def home():
-    return 'Inventory Management System is running!'
+    return render_template('home.html')
 
 @app.route('/test-db')
 def test_db():
@@ -394,6 +394,29 @@ def view_stock_transactions():
     transactions = cursor.fetchall()
     conn.close()
     return render_template('view_stock_transactions.html', transactions=transactions)
+
+@app.route('/dashboard')
+def dashboard():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM product")
+    total_products = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM product WHERE quantity_in_stock <= reorder_level")
+    low_stock_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM purchase_order WHERE status='pending'")
+    pending_orders = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM supplier")
+    total_suppliers = cursor.fetchone()[0]
+
+    conn.close()
+    return render_template('dashboard.html', total_products=total_products,
+                            low_stock_count=low_stock_count,
+                            pending_orders=pending_orders,
+                            total_suppliers=total_suppliers)
 
 if __name__ == '__main__':
     app.run(debug=True)

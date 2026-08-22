@@ -1,0 +1,32 @@
+{% extends "base_home.html" %}
+{% block content %}
+<div class="d-flex flex-column align-items-center justify-content-center text-center" style="min-height: 80vh;">
+    <div style="font-size: 4rem;">📦</div>
+    <h1 style="font-size: 2.2rem; margin-top: 10px;">InvenTrack</h1>
+    <p style="color: var(--text-light); font-size: 1.1rem; max-width: 450px;">
+        Manage your products, suppliers, and stock — all in one place.
+    </p>
+    <a href="/view-products" class="btn btn-primary btn-lg mt-3" style="padding: 12px 32px;">Go to Dashboard →</a>
+
+    <div class="row mt-5" style="max-width: 700px; width: 100%;">
+        <div class="col-4">
+            <div class="stat-card text-center">
+                <div class="stat-number">7</div>
+                <div class="stat-label">Modules</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="stat-card text-center">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">Live Tracking</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="stat-card text-center">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">Access</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
