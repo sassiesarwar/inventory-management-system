@@ -1,19 +1,21 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Add New Supplier</h2>
+<p class="text-muted mb-3">Add a vendor you purchase products from.</p>
 <div class="card p-4" style="max-width: 500px;">
 <form method="POST">
     <div class="mb-3"><label class="form-label">Supplier Name</label>
-    <input type="text" class="form-control" name="supplier_name" required></div>
+    <input type="text" class="form-control" name="supplier_name" placeholder="e.g., Ollivanders Wand Shop" required></div>
     <div class="mb-3"><label class="form-label">Contact Person</label>
-    <input type="text" class="form-control" name="contact_person"></div>
+    <input type="text" class="form-control" name="contact_person" placeholder="e.g., Garrick Ollivander"></div>
     <div class="mb-3"><label class="form-label">Phone</label>
-    <input type="text" class="form-control" name="phone"></div>
+    <input type="text" class="form-control" name="phone" placeholder="03XX-XXXXXXX"></div>
     <div class="mb-3"><label class="form-label">Email</label>
-    <input type="email" class="form-control" name="email"></div>
+    <input type="email" class="form-control" name="email" placeholder="contact@supplier.com"></div>
     <div class="mb-3"><label class="form-label">Address</label>
-    <input type="text" class="form-control" name="address"></div>
+    <input type="text" class="form-control" name="address" placeholder="Street, City"></div>
     <button type="submit" class="btn btn-primary">Add Supplier</button>
+    <a href="/view-suppliers" class="btn btn-outline-primary">Cancel</a>
 </form>
 </div>
 {% endblock %}

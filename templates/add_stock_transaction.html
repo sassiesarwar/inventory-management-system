@@ -1,21 +1,25 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Record Stock Transaction</h2>
+<p class="text-muted mb-3">Log stock coming in or going out.</p>
 <div class="card p-4" style="max-width: 500px;">
 <form method="POST">
     <div class="mb-3"><label class="form-label">Product</label>
     <select name="product_id" class="form-select" required>
+        <option value="" disabled selected>Choose a product</option>
         {% for prod in products %}<option value="{{ prod[0] }}">{{ prod[1] }}</option>{% endfor %}
     </select></div>
     <div class="mb-3"><label class="form-label">Transaction Type</label>
     <select name="transaction_type" class="form-select" required>
-        <option value="IN">Stock IN</option><option value="OUT">Stock OUT</option>
+        <option value="IN">Stock IN (new arrival)</option>
+        <option value="OUT">Stock OUT (sold / used)</option>
     </select></div>
     <div class="mb-3"><label class="form-label">Quantity</label>
-    <input type="number" class="form-control" name="quantity" required></div>
+    <input type="number" class="form-control" name="quantity" placeholder="e.g., 10" required></div>
     <div class="mb-3"><label class="form-label">Reference/Reason</label>
-    <input type="text" class="form-control" name="reference"></div>
+    <input type="text" class="form-control" name="reference" placeholder="e.g., New stock arrival, Sold to customer"></div>
     <button type="submit" class="btn btn-primary">Record Transaction</button>
+    <a href="/view-stock-transactions" class="btn btn-outline-primary">Cancel</a>
 </form>
 </div>
 {% endblock %}

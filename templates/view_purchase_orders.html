@@ -4,17 +4,26 @@
     <div><h2>Purchase Orders</h2><p>Track orders placed with suppliers</p></div>
     <a href="/add-purchase-order" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Create Order</a>
 </div>
+{% if orders|length == 0 %}
+<div class="empty-state card">
+    <i class="bi bi-receipt"></i>
+    <h5>No purchase orders yet</h5>
+    <p>Create your first order to restock inventory from a supplier.</p>
+    <a href="/add-purchase-order" class="btn btn-primary">+ Create Order</a>
+</div>
+{% else %}
 <table class="table table-hover">
     <thead><tr><th>Order ID</th><th>Supplier</th><th>Product</th><th>Quantity</th><th>Status</th><th>Order Date</th></tr></thead>
     <tbody>
     {% for order in orders %}
     <tr>
-        <td>{{ order[0] }}</td><td>{{ order[1] }}</td><td>{{ order[2] }}</td>
+        <td>#{{ order[0] }}</td><td>{{ order[1] }}</td><td>{{ order[2] }}</td>
         <td>{{ order[3] }}</td>
-        <td><span class="badge" style="background:#FEF3C7; color:#92400E;">{{ order[4] }}</span></td>
+        <td><span class="badge" style="background:#FEF3C7; color:#92400E;">{{ order[4]|capitalize }}</span></td>
         <td>{{ order[5] }}</td>
     </tr>
     {% endfor %}
     </tbody>
 </table>
+{% endif %}
 {% endblock %}

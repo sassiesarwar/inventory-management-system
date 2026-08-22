@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - InvenTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F7FA;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+        .login-card {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 380px;
+        }
+        .login-logo { text-align: center; font-size: 2.2rem; margin-bottom: 6px; }
+        .login-title { text-align: center; font-weight: 700; font-size: 1.3rem; color: #2D3748; margin-bottom: 4px; }
+        .login-subtitle { text-align: center; color: #718096; font-size: 0.88rem; margin-bottom: 24px; }
+        .form-control { border-radius: 8px; padding: 10px 14px; border: 1px solid #E2E8F0; margin-bottom: 14px; }
+        .form-control:focus { border-color: #089BAB; box-shadow: 0 0 0 3px rgba(8, 155, 171, 0.12); }
+        .btn-login { background-color: #089BAB; color: white; border: none; border-radius: 8px; padding: 10px; width: 100%; font-weight: 600; }
+        .btn-login:hover { background-color: #067885; color: white; }
+        .error-msg { color: #DC2626; font-size: 0.85rem; text-align: center; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-logo">📦</div>
+        <div class="login-title">InvenTrack</div>
+        <div class="login-subtitle">Sign in to manage your inventory</div>
+
+        {% if error %}
+        <div class="error-msg">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST">
+            <input type="text" class="form-control" name="username" placeholder="Username" required>
+            <input type="password" class="form-control" name="password" placeholder="Password" required>
+            <button type="submit" class="btn-login">Sign In</button>
+        </form>
+    </div>
+</body>
+</html>

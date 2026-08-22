@@ -6,15 +6,16 @@
     <div class="mb-3"><label class="form-label">Username</label>
     <input type="text" class="form-control" name="username" value="{{ user[1] }}" required></div>
     <div class="mb-3"><label class="form-label">Full Name</label>
-    <input type="text" class="form-control" name="full_name" value="{{ user[3] }}"></div>
+    <input type="text" class="form-control" name="full_name" value="{{ user[3] or '' }}"></div>
     <div class="mb-3"><label class="form-label">Role</label>
     <select name="role" class="form-select">
         <option value="staff" {% if user[4]=='staff' %}selected{% endif %}>Staff</option>
         <option value="admin" {% if user[4]=='admin' %}selected{% endif %}>Admin</option>
     </select></div>
     <div class="mb-3"><label class="form-label">Email</label>
-    <input type="email" class="form-control" name="email" value="{{ user[5] }}"></div>
+    <input type="email" class="form-control" name="email" value="{{ user[5] or '' }}"></div>
     <button type="submit" class="btn btn-primary">Update User</button>
+    <a href="/view-users" class="btn btn-outline-primary">Cancel</a>
 </form>
 </div>
 {% endblock %}

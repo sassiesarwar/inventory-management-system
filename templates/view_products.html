@@ -9,6 +9,15 @@
     <a href="/add-product" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Product</a>
 </div>
 
+{% if products|length == 0 %}
+<div class="empty-state card">
+    <i class="bi bi-basket3"></i>
+    <h5>No products yet</h5>
+    <p>Add your first product to start tracking inventory.</p>
+    <a href="/add-product" class="btn btn-primary">+ Add Product</a>
+</div>
+{% else %}
+
 <div class="row mb-4 g-3">
     <div class="col-md-4">
         <div class="stat-card">
@@ -30,31 +39,30 @@
     </div>
 </div>
 
-<table class="table table-hover">
-    <thead>
-        <tr><th>ID</th><th>Name</th><th>SKU</th><th>Price</th><th>Stock</th><th>Actions</th></tr>
-    </thead>
-    <tbody>
-        {% for product in products %}
-        <tr>
-            <td>{{ product[0] }}</td>
-            <td>{{ product[1] }}</td>
-            <td>{{ product[2] }}</td>
-            <td>Rs. {{ product[4] }}</td>
-            <td>
+<div class="row g-3">
+    {% for product in products %}
+    <div class="col-md-4 col-lg-3">
+        <div class="card h-100 p-3">
+            <div style="height: 90px; display:flex; align-items:center; justify-content:center; background:#F8FAFC; border-radius:8px; margin-bottom:12px; font-size:2rem;">
+                📦
+            </div>
+            <h6 class="mb-1">{{ product[1] }}</h6>
+            <div class="text-muted mb-2" style="font-size:0.8rem;">SKU: {{ product[2] or '—' }}</div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold" style="color:#089BAB;">Rs. {{ product[4] }}</span>
                 {% if product[5] <= product[6] %}
-                    <span class="badge" style="background:#FEE2E2; color:#DC2626;">{{ product[5] }} — Low</span>
+                    <span class="badge" style="background:#FEE2E2; color:#DC2626;">{{ product[5] }} left</span>
                 {% else %}
-                    <span class="badge" style="background:#DCFCE7; color:#059669;">{{ product[5] }}</span>
+                    <span class="badge" style="background:#DCFCE7; color:#059669;">{{ product[5] }} in stock</span>
                 {% endif %}
-            </td>
-            <td>
-                <a href="/edit-product/{{ product[0] }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                <a href="/delete-product/{{ product[0] }}" class="btn btn-sm btn-outline-danger">Delete</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
+            </div>
+            <div class="d-flex gap-2 mt-auto">
+                <a href="/edit-product/{{ product[0] }}" class="btn btn-sm btn-outline-primary flex-fill">Edit</a>
+                <a href="/delete-product/{{ product[0] }}" class="btn btn-sm btn-outline-danger flex-fill" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
 {% endblock %}

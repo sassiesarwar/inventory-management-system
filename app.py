@@ -1,14 +1,21 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, flash, session
 import mysql.connector
 
 from dotenv import load_dotenv
 import os
 
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = 'your-secret-key-change-this'
+
+@app.before_request
+def require_login():
+    allowed_routes = ['login', 'static']
+    if 'user_id' not in session and request.endpoint not in allowed_routes:
+        return redirect('/login')
 
 def get_db_connection():
     connection = mysql.connector.connect(
@@ -18,6 +25,34 @@ def get_db_connection():
         database="inventory_db"
     )
     return connection
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM user WHERE username=%s", (username,))
+        user = cursor.fetchone()
+        conn.close()
+
+        if user and check_password_hash(user[2], password):
+            session['user_id'] = user[0]
+            session['username'] = user[1]
+            session['role'] = user[4]
+            return redirect('/')
+        else:
+            return render_template('login.html', error='Invalid username or password')
+
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
 
 @app.route('/')
 def home():
@@ -51,10 +86,12 @@ def add_product():
         )
         conn.commit()
         conn.close()
-
+        flash('Product added successfully!')
         return redirect('/view-products')
 
     return render_template('add_product.html')
+
+
 @app.route('/view-products')
 def view_products():
     conn = get_db_connection()
@@ -63,6 +100,8 @@ def view_products():
     products = cursor.fetchall()
     conn.close()
     return render_template('view_products.html', products=products)
+
+
 @app.route('/edit-product/<int:id>', methods=['GET', 'POST'])
 def edit_product(id):
     conn = get_db_connection()
@@ -80,6 +119,7 @@ def edit_product(id):
         )
         conn.commit()
         conn.close()
+        flash('Product updated successfully!')
         return redirect('/view-products')
 
     cursor.execute("SELECT * FROM product WHERE product_id=%s", (id,))
@@ -95,7 +135,10 @@ def delete_product(id):
     cursor.execute("DELETE FROM product WHERE product_id=%s", (id,))
     conn.commit()
     conn.close()
+    flash('Product deleted successfully!')
     return redirect('/view-products')
+
+
 @app.route('/add-category', methods=['GET', 'POST'])
 def add_category():
     if request.method == 'POST':
@@ -110,6 +153,7 @@ def add_category():
         )
         conn.commit()
         conn.close()
+        flash('Category added successfully!')
         return redirect('/view-categories')
 
     return render_template('add_category.html')
@@ -140,6 +184,7 @@ def edit_category(id):
         )
         conn.commit()
         conn.close()
+        flash('Category updated successfully!')
         return redirect('/view-categories')
 
     cursor.execute("SELECT * FROM category WHERE category_id=%s", (id,))
@@ -155,7 +200,9 @@ def delete_category(id):
     cursor.execute("DELETE FROM category WHERE category_id=%s", (id,))
     conn.commit()
     conn.close()
+    flash('Category deleted successfully!')
     return redirect('/view-categories')
+
 
 @app.route('/add-supplier', methods=['GET', 'POST'])
 def add_supplier():
@@ -174,6 +221,7 @@ def add_supplier():
         )
         conn.commit()
         conn.close()
+        flash('Supplier added successfully!')
         return redirect('/view-suppliers')
 
     return render_template('add_supplier.html')
@@ -207,6 +255,7 @@ def edit_supplier(id):
         )
         conn.commit()
         conn.close()
+        flash('Supplier updated successfully!')
         return redirect('/view-suppliers')
 
     cursor.execute("SELECT * FROM supplier WHERE supplier_id=%s", (id,))
@@ -222,7 +271,9 @@ def delete_supplier(id):
     cursor.execute("DELETE FROM supplier WHERE supplier_id=%s", (id,))
     conn.commit()
     conn.close()
+    flash('Supplier deleted successfully!')
     return redirect('/view-suppliers')
+
 
 @app.route('/add-purchase-order', methods=['GET', 'POST'])
 def add_purchase_order():
@@ -249,6 +300,7 @@ def add_purchase_order():
         )
         conn.commit()
         conn.close()
+        flash('Purchase order created successfully!')
         return redirect('/view-purchase-orders')
 
     cursor.execute("SELECT * FROM supplier")
@@ -275,6 +327,7 @@ def view_purchase_orders():
     conn.close()
     return render_template('view_purchase_orders.html', orders=orders)
 
+
 @app.route('/add-user', methods=['GET', 'POST'])
 def add_user():
     if request.method == 'POST':
@@ -294,6 +347,7 @@ def add_user():
         )
         conn.commit()
         conn.close()
+        flash('User added successfully!')
         return redirect('/view-users')
 
     return render_template('add_user.html')
@@ -326,6 +380,7 @@ def edit_user(id):
         )
         conn.commit()
         conn.close()
+        flash('User updated successfully!')
         return redirect('/view-users')
 
     cursor.execute("SELECT * FROM user WHERE user_id=%s", (id,))
@@ -341,7 +396,9 @@ def delete_user(id):
     cursor.execute("DELETE FROM user WHERE user_id=%s", (id,))
     conn.commit()
     conn.close()
+    flash('User deleted successfully!')
     return redirect('/view-users')
+
 
 @app.route('/add-stock-transaction', methods=['GET', 'POST'])
 def add_stock_transaction():
@@ -372,6 +429,7 @@ def add_stock_transaction():
 
         conn.commit()
         conn.close()
+        flash('Stock transaction recorded successfully!')
         return redirect('/view-stock-transactions')
 
     cursor.execute("SELECT * FROM product")
@@ -395,6 +453,7 @@ def view_stock_transactions():
     conn.close()
     return render_template('view_stock_transactions.html', transactions=transactions)
 
+
 @app.route('/dashboard')
 def dashboard():
     conn = get_db_connection()
@@ -417,6 +476,7 @@ def dashboard():
                             low_stock_count=low_stock_count,
                             pending_orders=pending_orders,
                             total_suppliers=total_suppliers)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

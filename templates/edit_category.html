@@ -6,8 +6,9 @@
     <div class="mb-3"><label class="form-label">Category Name</label>
     <input type="text" class="form-control" name="category_name" value="{{ category[1] }}" required></div>
     <div class="mb-3"><label class="form-label">Description</label>
-    <input type="text" class="form-control" name="description" value="{{ category[2] }}"></div>
+    <input type="text" class="form-control" name="description" value="{{ category[2] or '' }}"></div>
     <button type="submit" class="btn btn-primary">Update Category</button>
+    <a href="/view-categories" class="btn btn-outline-primary">Cancel</a>
 </form>
 </div>
 {% endblock %}
