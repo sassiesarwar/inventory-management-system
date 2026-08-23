@@ -96,11 +96,14 @@ def add_product():
 def view_products():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM product")
+    cursor.execute("""
+        SELECT p.*, c.category_name 
+        FROM product p 
+        LEFT JOIN category c ON p.category_id = c.category_id
+    """)
     products = cursor.fetchall()
     conn.close()
     return render_template('view_products.html', products=products)
-
 
 @app.route('/edit-product/<int:id>', methods=['GET', 'POST'])
 def edit_product(id):
