@@ -31,7 +31,16 @@
         .sidebar a i { font-size: 1.05rem; width: 18px; }
         .sidebar a:hover { background-color: #E6F7F9; color: var(--teal-dark); }
         .sidebar a.active { background-color: #E6F7F9; color: var(--teal-dark); font-weight: 600; border-left: 3px solid var(--teal); }
-        .main-content { margin-left: 235px; padding: 30px 40px; }
+.main-content { margin-left: 235px; padding: 24px 40px; }
+.top-header {
+    background: white; border-bottom: 1px solid var(--border);
+    padding: 14px 40px; margin-left: 235px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.top-header .search-mini {
+    background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 14px; font-size: 0.85rem; color: var(--text-light); display: flex; align-items: center; gap: 8px;
+}
         .page-header { margin-bottom: 24px; }
         .page-header p { color: var(--text-light); font-size: 0.9rem; margin: 0; }
         .btn-primary { background-color: var(--teal); border-color: var(--teal); font-weight: 500; padding: 9px 20px; border-radius: 7px; }
@@ -84,7 +93,14 @@
 </div>
 
     </div>
-
+<div class="top-header">
+    <div style="font-weight: 600; color: var(--text);">
+        <i class="bi bi-box-seam-fill" style="color: var(--teal);"></i> InvenTrack
+    </div>
+    <div class="search-mini">
+        <i class="bi bi-clock-history"></i> {{ session.get('role', '')|capitalize }} Panel
+    </div>
+</div>
     <div class="main-content">
         {% with messages = get_flashed_messages() %}
             {% if messages %}
