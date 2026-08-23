@@ -53,7 +53,7 @@
             <h6 class="mb-1">{{ product[1] }}</h6>
             <div class="text-muted mb-2" style="font-size:0.8rem;">SKU: {{ product[2] or '—' }}</div>
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="fw-bold" style="color:#089BAB;">Rs. {{ product[4] }}</span>
+<span class="fw-bold" style="color:#089BAB;">Rs. {{ "{:,.0f}".format(product[4]) }}</span>
                 {% if product[5] <= product[6] %}
                     <span class="badge" style="background:#FEE2E2; color:#DC2626;">{{ product[5] }} left</span>
                 {% else %}
