@@ -9,6 +9,10 @@
     <a href="/add-product" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Product</a>
 </div>
 
+<div class="mb-3">
+    <input type="text" class="form-control" id="searchBox" placeholder="🔍 Search products by name or SKU..." onkeyup="filterProducts()" style="max-width: 400px;">
+</div>
+
 {% if products|length == 0 %}
 <div class="empty-state card">
     <i class="bi bi-basket3"></i>
@@ -65,4 +69,16 @@
     {% endfor %}
 </div>
 {% endif %}
+
+<script>
+function filterProducts() {
+    var input = document.getElementById('searchBox').value.toLowerCase();
+    var cards = document.querySelectorAll('.col-md-4.col-lg-3');
+    cards.forEach(function(card) {
+        var text = card.textContent.toLowerCase();
+        card.style.display = text.includes(input) ? '' : 'none';
+    });
+}
+</script>
+
 {% endblock %}
