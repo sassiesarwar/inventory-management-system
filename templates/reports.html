@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Reports</h2>
+    <p>Summary reports for your inventory</p>
+</div>
+
+<div class="card p-4 mb-4">
+    <h5 class="mb-3">📉 Low Stock Report</h5>
+    <table class="table table-hover">
+        <thead><tr><th>Product</th><th>Current Stock</th><th>Reorder Level</th></tr></thead>
+        <tbody>
+        {% for item in low_stock_report %}
+        <tr>
+            <td>{{ item[0] }}</td>
+            <td><span class="badge" style="background:#FEE2E2;color:#DC2626;">{{ item[1] }}</span></td>
+            <td>{{ item[2] }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card p-4">
+    <h5 class="mb-3">📦 Inventory Value Summary</h5>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+                <div><div class="stat-number">Rs. {{ "{:,.0f}".format(total_value) }}</div><div class="stat-label">Total Inventory Value</div></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:#059669;"><i class="bi bi-box-seam"></i></div>
+                <div><div class="stat-number">{{ total_units }}</div><div class="stat-label">Total Units in Stock</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

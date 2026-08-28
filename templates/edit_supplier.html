@@ -13,6 +13,13 @@
     <input type="email" class="form-control" name="email" value="{{ supplier[4] or '' }}"></div>
     <div class="mb-3"><label class="form-label">Address</label>
     <input type="text" class="form-control" name="address" value="{{ supplier[5] or '' }}"></div>
+    <div class="mb-3"><label class="form-label">Payment Terms</label>
+    <select class="form-select" name="payment_terms">
+        <option value="Net 15" {% if supplier[6]=='Net 15' %}selected{% endif %}>Net 15 days</option>
+        <option value="Net 30" {% if supplier[6]=='Net 30' %}selected{% endif %}>Net 30 days</option>
+        <option value="Cash on Delivery" {% if supplier[6]=='Cash on Delivery' %}selected{% endif %}>Cash on Delivery</option>
+        <option value="Advance Payment" {% if supplier[6]=='Advance Payment' %}selected{% endif %}>Advance Payment</option>
+    </select></div>
     <button type="submit" class="btn btn-primary">Update Supplier</button>
     <a href="/view-suppliers" class="btn btn-outline-primary">Cancel</a>
 </form>

@@ -33,6 +33,66 @@
     </div>
 </div>
 
+<div class="card p-4 mb-4">
+    <h5 class="mb-3">Products by Category</h5>
+    <canvas id="categoryChart" height="80"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('categoryChart');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ category_names|tojson }},
+            datasets: [{
+                label: 'Products',
+                data: {{ category_counts|tojson }},
+                backgroundColor: '#089BAB',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+</script>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h5 class="mb-3">⚠️ Stock Alerts</h5>
+            {% if low_stock_items %}
+                {% for item in low_stock_items %}
+                <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom: 1px solid #F1F5F9;">
+                    <span>{% if item[1] <= 2 %}🔴{% else %}🟡{% endif %} {{ item[0] }}</span>
+                    <span class="text-muted" style="font-size:0.85rem;">Only {{ item[1] }} left</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">No low stock items 🎉</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h5 class="mb-3">📈 Recent Activity</h5>
+            {% if recent_activity %}
+                {% for act in recent_activity %}
+                <div class="py-2" style="border-bottom: 1px solid #F1F5F9; font-size:0.88rem;">
+                    {% if act[1] == 'IN' %}📥{% else %}📤{% endif %}
+                    {{ act[2] }} units of {{ act[0] }} {% if act[1] == 'IN' %}received{% else %}removed{% endif %}
+                    <div class="text-muted" style="font-size:0.78rem;">{{ act[3] }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">No recent activity yet</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
 <div class="card p-4">
     <h5 class="mb-3">Quick Links</h5>
     <a href="/add-product" class="btn btn-outline-primary me-2">+ Add Product</a>

@@ -43,10 +43,16 @@
         {% endif %}
 
         <form method="POST">
-            <input type="text" class="form-control" name="username" placeholder="Username" required>
-            <input type="password" class="form-control" name="password" placeholder="Password" required>
-            <button type="submit" class="btn-login">Sign In</button>
-        </form>
+    <input type="email" class="form-control" name="email" placeholder="Email address" required>
+    <input type="password" class="form-control" name="password" placeholder="Password" required>
+    <div class="d-flex justify-content-between align-items-center mb-3" style="font-size: 0.85rem;">
+        <label style="color: #718096; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" name="remember"> Remember Me
+        </label>
+        <a href="/forgot-password" style="color: #089BAB; text-decoration: none;">Forgot Password?</a>
+    </div>
+    <button type="submit" class="btn-login">Sign In</button>
+</form>
     </div>
 </body>
 </html>

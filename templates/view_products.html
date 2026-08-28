@@ -9,8 +9,24 @@
     <a href="/add-product" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Product</a>
 </div>
 
-<div class="mb-3">
-    <input type="text" class="form-control" id="searchBox" placeholder="🔍 Search products by name or SKU..." onkeyup="filterProducts()" style="max-width: 400px;">
+<div class="mb-3 d-flex gap-2 flex-wrap">
+    <input type="text" class="form-control" id="searchBox" placeholder="🔍 Search products by name or SKU..." onkeyup="filterProducts()" style="max-width: 350px;">
+    <select class="form-select" id="categoryFilter" onchange="filterByCategory()" style="max-width: 180px;">
+        <option value="all">All Categories</option>
+        {% set seen = [] %}
+        {% for product in products %}
+            {% if product[9] and product[9] not in seen %}
+                {% set _ = seen.append(product[9]) %}
+                <option value="{{ product[9] }}">{{ product[9] }}</option>
+            {% endif %}
+        {% endfor %}
+    </select>
+    <select class="form-select" id="sortSelect" onchange="sortProducts()" style="max-width: 180px;">
+        <option value="default">Sort By</option>
+        <option value="price-low">Price: Low to High</option>
+        <option value="price-high">Price: High to Low</option>
+        <option value="name">Name: A-Z</option>
+    </select>
 </div>
 
 {% if products|length == 0 %}
@@ -43,43 +59,118 @@
     </div>
 </div>
 
-<div class="row g-3">
-    {% for product in products %}
-    <div class="col-md-4 col-lg-3">
-        <div class="card h-100 p-3">
-            <div style="height: 90px; display:flex; align-items:center; justify-content:center; background:#F8FAFC; border-radius:8px; margin-bottom:12px; font-size:2rem;">
-                📦
-            </div>
-            <h6 class="mb-1">{{ product[1] }}</h6>
-<div class="text-muted mb-2" style="font-size:0.8rem;">SKU: {{ product[2] or '—' }}</div>
-{% if product[7] %}
-<span class="badge mb-2" style="background:#EDE9FE; color:#6D28D9;">{{ product[7] }}</span>
-{% endif %}
-            <div class="d-flex justify-content-between align-items-center mb-2">
-<span class="fw-bold" style="color:#089BAB;">Rs. {{ "{:,.0f}".format(product[4]) }}</span>
+<table class="table table-hover" id="productGrid">
+    <thead>
+        <tr><th></th><th>Product</th><th>SKU</th><th>Category</th><th>Stock</th><th></th></tr>
+    </thead>
+    <tbody>
+        {% for product in products %}
+        <tr class="product-row" style="cursor: pointer;" data-price="{{ product[4] }}" data-bs-toggle="modal" data-bs-target="#modal{{ product[0] }}">
+            <td style="width:50px;">
+                {% set pname = product[1]|lower %}
+                {% if 'laptop' in pname or 'macbook' in pname %}{% set icon, bg, color = 'bi-laptop', '#EFF6FF', '#2563EB' %}
+                {% elif 'phone' in pname or 'iphone' in pname %}{% set icon, bg, color = 'bi-phone', '#FDF2F8', '#DB2777' %}
+                {% elif 'headphone' in pname or 'headset' in pname %}{% set icon, bg, color = 'bi-headphones', '#F5F3FF', '#7C3AED' %}
+                {% elif 'speaker' in pname %}{% set icon, bg, color = 'bi-speaker', '#FFF7ED', '#EA580C' %}
+                {% elif 'charger' in pname or 'cable' in pname %}{% set icon, bg, color = 'bi-plug', '#ECFDF5', '#059669' %}
+                {% elif 'mouse' in pname %}{% set icon, bg, color = 'bi-mouse2', '#FEF3C7', '#B45309' %}
+                {% elif 'keyboard' in pname %}{% set icon, bg, color = 'bi-keyboard', '#E0F2FE', '#0284C7' %}
+                {% elif 'monitor' in pname or 'display' in pname %}{% set icon, bg, color = 'bi-display', '#EEF2FF', '#4F46E5' %}
+                {% elif 'router' in pname or 'switch' in pname or 'access point' in pname %}{% set icon, bg, color = 'bi-router', '#F0FDF4', '#16A34A' %}
+                {% elif 'server' in pname %}{% set icon, bg, color = 'bi-hdd-network', '#FEF2F2', '#DC2626' %}
+                {% elif 'desktop' in pname or 'workstation' in pname %}{% set icon, bg, color = 'bi-pc-display', '#F5F5F4', '#57534E' %}
+                {% elif 'paper' in pname or 'pen' in pname or 'marker' in pname or 'note' in pname or 'stapler' in pname %}{% set icon, bg, color = 'bi-pencil', '#FFFBEB', '#D97706' %}
+                {% elif 'webcam' in pname %}{% set icon, bg, color = 'bi-camera-video', '#FDF4FF', '#A21CAF' %}
+                {% else %}{% set icon, bg, color = 'bi-box-seam', '#F1F5F9', '#64748B' %}
+                {% endif %}
+                <div style="width:38px; height:38px; display:flex; align-items:center; justify-content:center; background:{{ bg }}; border-radius:10px;">
+                    <i class="bi {{ icon }}" style="font-size:1.15rem; color:{{ color }};"></i>
+                </div>
+            </td>
+            <td class="fw-medium">{{ product[1] }}</td>
+            <td class="text-muted">{{ product[2] or '—' }}</td>
+            <td>{% if product[9] %}<span class="badge" style="background:#EDE9FE; color:#6D28D9;">{{ product[9] }}</span>{% else %}—{% endif %}</td>
+            <td>
                 {% if product[5] <= product[6] %}
-                    <span class="badge" style="background:#FEE2E2; color:#DC2626;">{{ product[5] }} left</span>
+                    <span class="badge" style="background:#FEE2E2; color:#DC2626;">{{ product[5] }} — Low</span>
                 {% else %}
                     <span class="badge" style="background:#DCFCE7; color:#059669;">{{ product[5] }} in stock</span>
                 {% endif %}
+            </td>
+            <td class="text-end text-muted"><i class="bi bi-chevron-right"></i></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Detail modals live OUTSIDE the table — a <div> is not valid inside <tbody>,
+     and browsers silently break the table layout if you put one there. -->
+{% for product in products %}
+<div class="modal fade" id="modal{{ product[0] }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 14px;">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ product[1] }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="d-flex gap-2 mt-auto">
-                <a href="/edit-product/{{ product[0] }}" class="btn btn-sm btn-outline-primary flex-fill">Edit</a>
-                <a href="/delete-product/{{ product[0] }}" class="btn btn-sm btn-outline-danger flex-fill" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
+            <div class="modal-body">
+                <table class="table table-borderless mb-0" style="font-size: 0.92rem;">
+                    <tr><td class="text-muted" style="width:140px;">SKU</td><td>{{ product[2] or '—' }}</td></tr>
+                    <tr><td class="text-muted">Category</td><td>{{ product[9] or '—' }}</td></tr>
+                    <tr><td class="text-muted">Description</td><td>{{ product[7] or 'No description available' }}</td></tr>
+                    <tr><td class="text-muted">Unit Price</td><td class="fw-bold" style="color:#089BAB;">Rs. {{ "{:,.0f}".format(product[4]) }}</td></tr>
+                    <tr><td class="text-muted">Current Stock</td><td>{{ product[5] }} units</td></tr>
+                    <tr><td class="text-muted">Reorder Level</td><td>{{ product[6] }} units</td></tr>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <a href="/edit-product/{{ product[0] }}" class="btn btn-outline-primary">Edit</a>
+                <a href="/delete-product/{{ product[0] }}" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
             </div>
         </div>
     </div>
-    {% endfor %}
 </div>
+{% endfor %}
 {% endif %}
 
 <script>
 function filterProducts() {
     var input = document.getElementById('searchBox').value.toLowerCase();
-    var cards = document.querySelectorAll('.col-md-4.col-lg-3');
-    cards.forEach(function(card) {
-        var text = card.textContent.toLowerCase();
-        card.style.display = text.includes(input) ? '' : 'none';
+    var rows = document.querySelectorAll('#productGrid tbody tr.product-row');
+    rows.forEach(function(row) {
+        var text = row.textContent.toLowerCase();
+        row.style.display = text.includes(input) ? '' : 'none';
+    });
+}
+
+function filterByCategory() {
+    var selected = document.getElementById('categoryFilter').value;
+    var rows = document.querySelectorAll('#productGrid tbody tr.product-row');
+    rows.forEach(function(row) {
+        var badge = row.querySelector('.badge[style*="EDE9FE"]');
+        var category = badge ? badge.textContent.trim() : '';
+        row.style.display = (selected === 'all' || category === selected) ? '' : 'none';
+    });
+}
+
+function sortProducts() {
+    var sortValue = document.getElementById('sortSelect').value;
+    var tbody = document.querySelector('#productGrid tbody');
+    var rows = Array.from(tbody.querySelectorAll('tr.product-row'));
+
+    rows.sort(function(a, b) {
+        if (sortValue === 'name') {
+            return a.children[1].textContent.localeCompare(b.children[1].textContent);
+        } else if (sortValue === 'price-low' || sortValue === 'price-high') {
+            var priceA = parseFloat(a.dataset.price);
+            var priceB = parseFloat(b.dataset.price);
+            return sortValue === 'price-low' ? priceA - priceB : priceB - priceA;
+        }
+        return 0;
+    });
+
+    rows.forEach(function(row) {
+        tbody.appendChild(row);
     });
 }
 </script>

@@ -1,15 +1,31 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Add New Category</h2>
-<p class="text-muted mb-3">Create a category to group similar products together.</p>
-<div class="card p-4" style="max-width: 500px;">
-<form method="POST">
-    <div class="mb-3"><label class="form-label">Category Name</label>
-    <input type="text" class="form-control" name="category_name" placeholder="e.g., Electronics" required></div>
-    <div class="mb-3"><label class="form-label">Description</label>
-    <input type="text" class="form-control" name="description" placeholder="Brief description (optional)"></div>
-    <button type="submit" class="btn btn-primary">Add Category</button>
-    <a href="/view-categories" class="btn btn-outline-primary">Cancel</a>
-</form>
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div><h2>Users</h2><p>Manage system access for Admin and Staff</p></div>
+    <a href="/add-user" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add User</a>
 </div>
+{% if users|length == 0 %}
+<div class="empty-state card">
+    <i class="bi bi-people"></i>
+    <h5>No users yet</h5>
+    <p>Add a user to give them access to the system.</p>
+    <a href="/add-user" class="btn btn-primary">+ Add User</a>
+</div>
+{% else %}
+<table class="table table-hover">
+    <thead><tr><th>ID</th><th>Username</th><th>Full Name</th><th>Role</th><th>Email</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for u in users %}
+    <tr>
+        <td>{{ u[0] }}</td><td>{{ u[1] }}</td><td>{{ u[3] or '—' }}</td>
+        <td><span class="badge" style="background:#DBEAFE;color:#1E40AF;">{{ u[4]|capitalize }}</span></td><td>{{ u[5] or '—' }}</td>
+        <td>
+            <a href="/edit-user/{{ u[0] }}" class="btn btn-sm btn-outline-primary">Edit</a>
+            <a href="/delete-user/{{ u[0] }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this user?');">Delete</a>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endif %}
 {% endblock %}

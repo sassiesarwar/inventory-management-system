@@ -13,11 +13,12 @@
 </div>
 {% else %}
 <table class="table table-hover">
-    <thead><tr><th>ID</th><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Actions</th></tr></thead>
+    <thead><tr><th>ID</th><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Payment Terms</th><th>Actions</th></tr></thead>
     <tbody>
     {% for sup in suppliers %}
     <tr>
         <td>{{ sup[0] }}</td><td>{{ sup[1] }}</td><td>{{ sup[2] or '—' }}</td><td>{{ sup[3] or '—' }}</td><td>{{ sup[4] or '—' }}</td>
+        <td><span class="badge" style="background:#F1F5F9;color:#475569;">{{ sup[6] or '—' }}</span></td>
         <td>
             <a href="/edit-supplier/{{ sup[0] }}" class="btn btn-sm btn-outline-primary">Edit</a>
             <a href="/delete-supplier/{{ sup[0] }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this supplier?');">Delete</a>

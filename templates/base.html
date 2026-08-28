@@ -9,38 +9,38 @@
     <style>
         :root {
             --teal: #089BAB; --teal-dark: #067885; --bg: #F5F7FA;
-            --sidebar-bg: #FFFFFF; --text: #2D3748; --text-light: #718096; --border: #E2E8F0;
+            --sidebar-bg: #1A2B4A; --text: #2D3748; --text-light: #718096; --border: #E2E8F0;
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; }
         h1, h2, h3 { font-weight: 600; color: var(--text); }
         .sidebar {
             position: fixed; top: 0; left: 0; width: 235px; height: 100vh;
-            background-color: var(--sidebar-bg); border-right: 1px solid var(--border);
+            background-color: var(--sidebar-bg);
             padding-top: 20px; overflow-y: auto;
         }
         .sidebar-brand {
-            display: flex; align-items: center; gap: 8px; color: var(--teal-dark);
+            display: flex; align-items: center; gap: 8px; color: white;
             font-weight: 700; font-size: 1.1rem; padding: 0 22px 20px 22px;
-            border-bottom: 1px solid var(--border); margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px;
         }
         .sidebar a {
-            display: flex; align-items: center; gap: 12px; color: var(--text-light);
+            display: flex; align-items: center; gap: 12px; color: #A8B4CC;
             padding: 11px 22px; margin: 2px 10px; text-decoration: none;
             font-size: 0.92rem; font-weight: 500; border-radius: 8px; transition: 0.15s;
         }
         .sidebar a i { font-size: 1.05rem; width: 18px; }
-        .sidebar a:hover { background-color: #E6F7F9; color: var(--teal-dark); }
-        .sidebar a.active { background-color: #E6F7F9; color: var(--teal-dark); font-weight: 600; border-left: 3px solid var(--teal); }
-.main-content { margin-left: 235px; padding: 24px 40px; }
-.top-header {
-    background: white; border-bottom: 1px solid var(--border);
-    padding: 14px 40px; margin-left: 235px;
-    display: flex; justify-content: space-between; align-items: center;
-}
-.top-header .search-mini {
-    background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px;
-    padding: 6px 14px; font-size: 0.85rem; color: var(--text-light); display: flex; align-items: center; gap: 8px;
-}
+        .sidebar a:hover { background-color: rgba(255,255,255,0.08); color: white; }
+        .sidebar a.active { background-color: var(--teal); color: white; font-weight: 600; }
+        .main-content { margin-left: 235px; padding: 24px 40px; }
+        .top-header {
+            background: white; border-bottom: 1px solid var(--border);
+            padding: 14px 40px; margin-left: 235px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .top-header .search-mini {
+            background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px;
+            padding: 6px 14px; font-size: 0.85rem; color: var(--text-light); display: flex; align-items: center; gap: 8px;
+        }
         .page-header { margin-bottom: 24px; }
         .page-header p { color: var(--text-light); font-size: 0.9rem; margin: 0; }
         .btn-primary { background-color: var(--teal); border-color: var(--teal); font-weight: 500; padding: 9px 20px; border-radius: 7px; }
@@ -78,29 +78,48 @@
     <div class="sidebar">
         <div class="sidebar-brand"><i class="bi bi-box-seam-fill"></i> InvenTrack</div>
         <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
-        <a href="/view-products" class="{% if '/product' in request.path %}active{% endif %}"><i class="bi bi-basket3"></i> Products</a>
-        <a href="/view-categories" class="{% if '/categor' in request.path %}active{% endif %}"><i class="bi bi-tags"></i> Categories</a>
-        <a href="/view-suppliers" class="{% if '/supplier' in request.path %}active{% endif %}"><i class="bi bi-truck"></i> Suppliers</a>
+        <a href="/view-products" class="{% if 'product' in request.path %}active{% endif %}"><i class="bi bi-basket3"></i> Products</a>
+        <a href="/view-categories" class="{% if 'categor' in request.path %}active{% endif %}"><i class="bi bi-tags"></i> Categories</a>
+        <a href="/view-suppliers" class="{% if 'supplier' in request.path %}active{% endif %}"><i class="bi bi-truck"></i> Suppliers</a>
         <a href="/view-purchase-orders" class="{% if 'purchase-order' in request.path %}active{% endif %}"><i class="bi bi-receipt"></i> Purchase Orders</a>
         <a href="/view-stock-transactions" class="{% if 'stock-transaction' in request.path %}active{% endif %}"><i class="bi bi-arrow-left-right"></i> Stock Transactions</a>
-        <a href="/view-users" class="{% if '/user' in request.path %}active{% endif %}"><i class="bi bi-people"></i> Users</a>
+        <a href="/view-users" class="{% if 'user' in request.path %}active{% endif %}"><i class="bi bi-people"></i> Users</a>
+        <a href="/reports" class="{% if 'reports' in request.path %}active{% endif %}"><i class="bi bi-graph-up"></i> Reports</a>
+        <a href="/settings" class="{% if 'settings' in request.path %}active{% endif %}"><i class="bi bi-gear"></i> Settings</a>
 
-<div style="position: absolute; bottom: 20px; width: 100%; padding: 0 22px;">
-    <div style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 8px;">
-        <i class="bi bi-person-circle"></i> {{ session.get('username', '') }} ({{ session.get('role', '') }})
+        <div style="position: absolute; bottom: 20px; width: 100%; padding: 0 22px;">
+            <div style="font-size: 0.85rem; color: #A8B4CC; margin-bottom: 8px;">
+                <i class="bi bi-person-circle"></i> {{ session.get('username', '') }} ({{ session.get('role', '') }})
+            </div>
+            <a href="/logout" style="color: #F87171; padding: 8px 0; margin: 0;"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        </div>
     </div>
-    <a href="/logout" style="color: #DC2626; padding: 8px 0; margin: 0;"><i class="bi bi-box-arrow-right"></i> Logout</a>
-</div>
 
+    <div class="top-header">
+        <div style="font-weight: 600; color: var(--text);">
+            <i class="bi bi-box-seam-fill" style="color: var(--teal);"></i> InvenTrack
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="dropdown">
+                <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-plus-lg"></i> Quick Create
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="/add-product"><i class="bi bi-basket3 me-2"></i>Product</a></li>
+                    <li><a class="dropdown-item" href="/add-category"><i class="bi bi-tags me-2"></i>Category</a></li>
+                    <li><a class="dropdown-item" href="/add-supplier"><i class="bi bi-truck me-2"></i>Supplier</a></li>
+                    <li><a class="dropdown-item" href="/add-purchase-order"><i class="bi bi-receipt me-2"></i>Purchase Order</a></li>
+                    <li><a class="dropdown-item" href="/add-stock-transaction"><i class="bi bi-arrow-left-right me-2"></i>Stock Transaction</a></li>
+                    <li><a class="dropdown-item" href="/add-user"><i class="bi bi-person-plus me-2"></i>User</a></li>
+                </ul>
+            </div>
+            <i class="bi bi-bell" style="font-size: 1.1rem; color: var(--text-light); cursor: pointer;" title="Notifications"></i>
+            <div class="search-mini">
+                <i class="bi bi-person-circle"></i> {{ session.get('role', '')|capitalize }}
+            </div>
+        </div>
     </div>
-<div class="top-header">
-    <div style="font-weight: 600; color: var(--text);">
-        <i class="bi bi-box-seam-fill" style="color: var(--teal);"></i> InvenTrack
-    </div>
-    <div class="search-mini">
-        <i class="bi bi-clock-history"></i> {{ session.get('role', '')|capitalize }} Panel
-    </div>
-</div>
+
     <div class="main-content">
         {% with messages = get_flashed_messages() %}
             {% if messages %}
@@ -113,5 +132,7 @@
         {% endwith %}
         {% block content %}{% endblock %}
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

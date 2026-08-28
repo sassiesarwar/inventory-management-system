@@ -1,0 +1,142 @@
+<!-- user_dashboard.html -->
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h2>👋 Welcome, {{ session.get('username', 'User') }}!</h2>
+    <p>Your personal inventory dashboard</p>
+</div>
+
+<!-- User Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#089BAB;">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <div>
+                <div class="stat-number">{{ my_items|length }}</div>
+                <div class="stat-label">My Items</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#F59E0B;">
+                <i class="bi bi-clock"></i>
+            </div>
+            <div>
+                <div class="stat-number">{{ my_items|selectattr('5', 'equalto', 'overdue')|list|length }}</div>
+                <div class="stat-label">Overdue</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#059669;">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div>
+                <div class="stat-number">{{ history|length }}</div>
+                <div class="stat-label">Total Checkouts</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#8B5CF6;">
+                <i class="bi bi-calendar"></i>
+            </div>
+            <div>
+                <div class="stat-number">{% if my_items %}{{ my_items[0][5] }}{% else %}0{% endif %}</div>
+                <div class="stat-label">Days Until Due</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- My Current Items -->
+<div class="card p-4 mb-4">
+    <h5 class="mb-3">📋 My Current Items</h5>
+    {% if my_items %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Checkout Date</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in my_items %}
+                <tr>
+                    <td><strong>{{ item[10] }}</strong></td>
+                    <td>{{ item[3] }}</td>
+                    <td>
+                        {% if item[4] < today %}
+                            <span class="text-danger">{{ item[4] }} ⚠️</span>
+                        {% else %}
+                            {{ item[4] }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item[5] == 'overdue' %}
+                            <span class="badge" style="background:#FEE2E2;color:#DC2626;">🔴 Overdue</span>
+                        {% else %}
+                            <span class="badge" style="background:#DCFCE7;color:#059669;">🟢 On Time</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/return/{{ item[0] }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-arrow-return-left"></i> Return
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-box-seam"></i>
+        <p>You don't have any items checked out.</p>
+        <a href="#available-products" class="btn btn-primary">Browse Available Products</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Available Products -->
+<div class="card p-4" id="available-products">
+    <h5 class="mb-3">📦 Available Products</h5>
+    <div class="row g-3">
+        {% for product in available_products %}
+        <div class="col-md-3">
+            <div class="card h-100 p-3">
+                <div style="font-size: 2rem; text-align: center;">
+                    {% set pname = product[1]|lower %}
+                    {% if 'laptop' in pname %}💻
+                    {% elif 'phone' in pname %}📱
+                    {% elif 'monitor' in pname %}🖥️
+                    {% else %}📦{% endif %}
+                </div>
+                <h6>{{ product[1] }}</h6>
+                <div class="text-muted" style="font-size:0.8rem;">{{ product[10] or 'No category' }}</div>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span class="fw-bold" style="color:#089BAB;">${{ product[4] }}</span>
+                    <span class="badge" style="background:#DCFCE7;color:#059669;">
+                        {{ product[9] }} available
+                    </span>
+                </div>
+                <a href="/checkout/{{ product[0] }}" class="btn btn-sm btn-primary w-100 mt-2">
+                    <i class="bi bi-box-arrow-in-right"></i> Checkout
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
