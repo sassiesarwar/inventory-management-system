@@ -8,11 +8,17 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <style>
         :root {
-            --teal: #089BAB; --teal-dark: #067885; --bg: #F5F7FA;
-            --sidebar-bg: #1A2B4A; --text: #2D3748; --text-light: #718096; --border: #E2E8F0;
+            --teal: #089BAB;
+            --teal-dark: #067885;
+            --bg: #F5F7FA;
+            --sidebar-bg: #1A2B4A;
+            --text: #2D3748;
+            --text-light: #718096;
+            --border: #E2E8F0;
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; }
         h1, h2, h3 { font-weight: 600; color: var(--text); }
+        
         .sidebar {
             position: fixed; top: 0; left: 0; width: 235px; height: 100vh;
             background-color: var(--sidebar-bg);
@@ -31,7 +37,9 @@
         .sidebar a i { font-size: 1.05rem; width: 18px; }
         .sidebar a:hover { background-color: rgba(255,255,255,0.08); color: white; }
         .sidebar a.active { background-color: var(--teal); color: white; font-weight: 600; }
+        
         .main-content { margin-left: 235px; padding: 24px 40px; }
+        
         .top-header {
             background: white; border-bottom: 1px solid var(--border);
             padding: 14px 40px; margin-left: 235px;
@@ -43,35 +51,94 @@
         }
         .page-header { margin-bottom: 24px; }
         .page-header p { color: var(--text-light); font-size: 0.9rem; margin: 0; }
+        
         .btn-primary { background-color: var(--teal); border-color: var(--teal); font-weight: 500; padding: 9px 20px; border-radius: 7px; }
         .btn-primary:hover { background-color: var(--teal-dark); border-color: var(--teal-dark); }
         .btn-outline-primary { color: var(--teal); border-color: var(--teal); border-radius: 7px; font-weight: 500; }
         .btn-outline-primary:hover { background-color: var(--teal); border-color: var(--teal); }
         .btn-outline-danger { border-radius: 7px; font-weight: 500; }
+        
         .card { border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
         .table { background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
         table.table thead { background-color: #F8FAFC; color: var(--text-light); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
         table.table thead th { border-bottom: 1px solid var(--border); font-weight: 600; padding: 14px 16px; }
         table.table td { padding: 13px 16px; vertical-align: middle; }
         .table-hover tbody tr:hover { background-color: #F8FAFC; }
+        
         .form-control, .form-select { border-radius: 8px; border: 1px solid var(--border); padding: 9px 12px; }
         .form-control:focus, .form-select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(8, 155, 171, 0.12); }
         .badge { border-radius: 6px; padding: 5px 10px; font-weight: 500; }
+        
         .stat-card {
             background: white; border: 1px solid var(--border); border-radius: 12px;
             padding: 20px 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
             display: flex; align-items: center; gap: 16px;
         }
         .stat-icon {
-            width: 46px; height: 46px; border-radius: 10px; display: flex;
-            align-items: center; justify-content: center; font-size: 1.3rem; color: white; background: var(--teal);
+            width: 46px; height: 46px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; color: white; background: var(--teal);
         }
         .stat-card .stat-number { font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1.1; }
         .stat-card .stat-label { font-size: 0.82rem; color: var(--text-light); }
+        
         .empty-state {
             text-align: center; padding: 60px 20px; color: var(--text-light);
         }
         .empty-state i { font-size: 2.5rem; color: #CBD5E1; margin-bottom: 12px; display: block; }
+        
+        /* Notification Bell Styles */
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #EF4444;
+            color: white;
+            border-radius: 50%;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            min-width: 18px;
+            text-align: center;
+            font-weight: 700;
+            border: 2px solid white;
+        }
+        .notification-dropdown {
+            min-width: 320px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        .notification-item {
+            padding: 10px 16px;
+            border-bottom: 1px solid #F1F5F9;
+            transition: 0.15s;
+        }
+        .notification-item:hover {
+            background: #F8FAFC;
+        }
+        .notification-item .notif-icon {
+            font-size: 1.2rem;
+            margin-right: 12px;
+        }
+        .notification-item .notif-text {
+            font-size: 0.85rem;
+            color: #1E293B;
+        }
+        .notification-item .notif-time {
+            font-size: 0.7rem;
+            color: #94A3B8;
+        }
+        .notification-empty {
+            text-align: center;
+            padding: 30px 20px;
+            color: #94A3B8;
+        }
+        .notification-empty i {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 8px;
+            color: #CBD5E1;
+        }
     </style>
 </head>
 <body>
@@ -91,7 +158,9 @@
             <div style="font-size: 0.85rem; color: #A8B4CC; margin-bottom: 8px;">
                 <i class="bi bi-person-circle"></i> {{ session.get('username', '') }} ({{ session.get('role', '') }})
             </div>
-            <a href="/logout" style="color: #F87171; padding: 8px 0; margin: 0;"><i class="bi bi-box-arrow-right"></i> Logout</a>
+            <a href="/logout" style="color: #F87171; padding: 8px 0; margin: 0; text-decoration: none; display: block;">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
         </div>
     </div>
 
@@ -113,7 +182,56 @@
                     <li><a class="dropdown-item" href="/add-user"><i class="bi bi-person-plus me-2"></i>User</a></li>
                 </ul>
             </div>
-            <i class="bi bi-bell" style="font-size: 1.1rem; color: var(--text-light); cursor: pointer;" title="Notifications"></i>
+            
+            <!-- 🔔 NOTIFICATION BELL WITH DROPDOWN -->
+            <div class="dropdown" style="display: inline-block; position: relative;">
+                <i class="bi bi-bell" style="font-size: 1.2rem; color: var(--text-light); cursor: pointer;" 
+                   data-bs-toggle="dropdown" aria-expanded="false" title="Notifications"></i>
+                <span class="notification-badge" id="notifCount">{{ notification_count or 0 }}</span>
+                
+                <ul class="dropdown-menu dropdown-menu-end notification-dropdown" id="notifDropdown">
+                    <li><h6 class="dropdown-header" style="font-weight: 600;">📬 Notifications</h6></li>
+                    <li><hr class="dropdown-divider" style="margin: 4px 0;"></li>
+                    
+                    {% if notifications %}
+                        {% for notif in notifications %}
+                        <li>
+                            <a class="dropdown-item notification-item" href="{{ notif.link or '#' }}">
+                                <div style="display: flex; align-items: start;">
+                                    <span class="notif-icon">
+                                        {% if notif.type == 'danger' %}🔴
+                                        {% elif notif.type == 'warning' %}⚠️
+                                        {% elif notif.type == 'success' %}✅
+                                        {% else %}ℹ️{% endif %}
+                                    </span>
+                                    <div style="flex: 1;">
+                                        <div class="notif-text">{{ notif.message }}</div>
+                                        <div class="notif-time">{{ notif.time }}</div>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    {% else %}
+                        <li>
+                            <div class="notification-empty">
+                                <i class="bi bi-check-circle-fill" style="color: #22C55E;"></i>
+                                <div style="font-size: 0.9rem;">No new notifications</div>
+                                <div style="font-size: 0.75rem;">Everything is up to date!</div>
+                            </div>
+                        </li>
+                    {% endif %}
+                    
+                    <li><hr class="dropdown-divider" style="margin: 4px 0;"></li>
+                    <li>
+                        <a class="dropdown-item text-center" href="/notifications" 
+                           style="color: var(--teal); font-weight: 600; font-size: 0.85rem;">
+                            View All Notifications →
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
             <div class="search-mini">
                 <i class="bi bi-person-circle"></i> {{ session.get('role', '')|capitalize }}
             </div>
@@ -125,7 +243,7 @@
             {% if messages %}
                 {% for message in messages %}
                 <div style="background:#DCFCE7; color:#059669; padding:12px 20px; border-radius:8px; margin-bottom:16px; font-weight:500;">
-                    <i class="bi bi-check-circle-fill"></i> {{ message }}
+                    {{ message }}
                 </div>
                 {% endfor %}
             {% endif %}
