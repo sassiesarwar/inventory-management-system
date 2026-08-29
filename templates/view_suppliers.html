@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
+
 <div class="page-header d-flex justify-content-between align-items-start">
     <div><h2>Suppliers</h2><p>Manage your vendor and supplier contacts</p></div>
     <a href="/add-supplier" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Supplier</a>
 </div>
+
 {% if suppliers|length == 0 %}
 <div class="empty-state card">
     <i class="bi bi-truck"></i>
@@ -12,20 +14,94 @@
     <a href="/add-supplier" class="btn btn-primary">+ Add Supplier</a>
 </div>
 {% else %}
-<table class="table table-hover">
-    <thead><tr><th>ID</th><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Payment Terms</th><th>Actions</th></tr></thead>
-    <tbody>
-    {% for sup in suppliers %}
-    <tr>
-        <td>{{ sup[0] }}</td><td>{{ sup[1] }}</td><td>{{ sup[2] or '—' }}</td><td>{{ sup[3] or '—' }}</td><td>{{ sup[4] or '—' }}</td>
-        <td><span class="badge" style="background:#F1F5F9;color:#475569;">{{ sup[6] or '—' }}</span></td>
-        <td>
-            <a href="/edit-supplier/{{ sup[0] }}" class="btn btn-sm btn-outline-primary">Edit</a>
-            <a href="/delete-supplier/{{ sup[0] }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this supplier?');">Delete</a>
-        </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-</table>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#089BAB;"><i class="bi bi-truck"></i></div>
+            <div>
+                <div class="stat-number">{{ suppliers|length }}</div>
+                <div class="stat-label">Total Suppliers</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="card p-3 mb-4">
+    <div class="input-group">
+        <span class="input-group-text bg-white border-end-0">
+            <i class="bi bi-search text-muted"></i>
+        </span>
+        <input type="text" class="form-control border-start-0" id="supplierSearchBox"
+               placeholder="Search by name, contact, or email..." onkeyup="filterSuppliers()">
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="suppliersTable">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 60px;">ID</th>
+                    <th>Name</th>
+                    <th>Contact</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Payment Terms</th>
+                    <th style="width: 160px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sup in suppliers %}
+                <tr class="supplier-row"
+                    data-name="{{ sup[1]|lower }}"
+                    data-contact="{{ (sup[2] or '')|lower }}"
+                    data-email="{{ (sup[4] or '')|lower }}">
+                    <td>{{ sup[0] }}</td>
+                    <td>{{ sup[1] }}</td>
+                    <td>{{ sup[2] or '---' }}</td>
+                    <td>{{ sup[3] or '---' }}</td>
+                    <td>{{ sup[4] or '---' }}</td>
+                    <td><span class="badge" style="background:#F1F5F9;color:#475569;">{{ sup[6] or '---' }}</span></td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="/edit-supplier/{{ sup[0] }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a href="/delete-supplier/{{ sup[0] }}" class="btn btn-sm btn-outline-danger"
+                               onclick="return confirm('Are you sure you want to delete this supplier?');">Delete</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div id="noSupplierResults" class="text-center py-5" style="display:none;">
+            <div style="font-size:3rem; color:#CBD5E1;">🔍</div>
+            <h5 style="color:#94A3B8;">No suppliers found</h5>
+            <p style="color:#CBD5E1;">Try a different search term</p>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterSuppliers() {
+    var searchText = document.getElementById('supplierSearchBox').value.toLowerCase().trim();
+    var rows = document.querySelectorAll('.supplier-row');
+    var visibleCount = 0;
+
+    rows.forEach(function(row) {
+        var name = row.getAttribute('data-name') || '';
+        var contact = row.getAttribute('data-contact') || '';
+        var email = row.getAttribute('data-email') || '';
+        var show = !searchText || name.includes(searchText) || contact.includes(searchText) || email.includes(searchText);
+        row.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
+    });
+
+    document.getElementById('noSupplierResults').style.display = visibleCount === 0 ? '' : 'none';
+}
+</script>
+
 {% endif %}
 {% endblock %}
