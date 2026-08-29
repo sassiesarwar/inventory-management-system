@@ -12,6 +12,17 @@ app.secret_key = 'your-secret-key-change-this'
 
 DEV_MODE = False
 
+from functools import wraps
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get('role') != 'admin':
+            flash('⛔ Only Admins can do this. Contact your administrator.')
+            return redirect('/dashboard')
+        return f(*args, **kwargs)
+    return decorated_function
+
 def get_notifications(user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -377,9 +388,17 @@ def add_product():
         description = request.form['description']
         unit_price = request.form['unit_price']
         quantity_in_stock = request.form['quantity_in_stock']
-        
+
         conn = get_db_connection()
         cursor = conn.cursor()
+
+        # ✅ Prevent duplicate SKU
+        cursor.execute("SELECT product_id FROM product WHERE sku = %s", (sku,))
+        if cursor.fetchone():
+            conn.close()
+            flash(f'❌ SKU "{sku}" already exists. Please use a unique SKU.')
+            return render_template('add_product.html')
+
         cursor.execute(
             """INSERT INTO product (product_name, sku, description, unit_price, quantity_in_stock, available_quantity) 
                VALUES (%s, %s, %s, %s, %s, %s)""",
@@ -461,6 +480,7 @@ def edit_product(id):
     return render_template('edit_product.html', product=product)
 
 @app.route('/delete-product/<int:id>')
+@admin_required
 def delete_product(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -571,6 +591,7 @@ def edit_category(id):
     return render_template('edit_category.html', category=category)
 
 @app.route('/delete-category/<int:id>')
+@admin_required
 def delete_category(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -643,6 +664,7 @@ def edit_supplier(id):
     return render_template('edit_supplier.html', supplier=supplier)
 
 @app.route('/delete-supplier/<int:id>')
+@admin_required
 def delete_supplier(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -719,6 +741,7 @@ def view_purchase_orders():
     return render_template('view_purchase_orders.html', orders=orders)
 
 @app.route('/receive-purchase-order/<int:id>')
+@admin_required
 def receive_purchase_order(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -769,6 +792,7 @@ def add_user():
     return render_template('add_user.html')
 
 @app.route('/view-users')
+@admin_required
 def view_users():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -778,6 +802,7 @@ def view_users():
     return render_template('view_users.html', users=users)
 
 @app.route('/edit-user/<int:id>', methods=['GET', 'POST'])
+@admin_required
 def edit_user(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -803,6 +828,7 @@ def edit_user(id):
     return render_template('edit_user.html', user=user)
 
 @app.route('/delete-user/<int:id>')
+@admin_required
 def delete_user(id):
     conn = get_db_connection()
     cursor = conn.cursor()
