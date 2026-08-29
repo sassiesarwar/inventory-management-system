@@ -1,7 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
+
 <h2>Create Purchase Order</h2>
 <p class="text-muted mb-3">Order stock from a supplier.</p>
+
+{% if prefill_product_id %}
+<div class="alert" style="background:#FFF7ED; border:1px solid #FED7AA; color:#9A3412; border-radius:10px; padding:12px 18px; margin-bottom:16px;">
+    🔄 <strong>Reordering from a low-stock alert</strong> — product and a suggested quantity have been filled in below. Please choose the supplier and confirm the unit cost.
+</div>
+{% endif %}
+
 <div class="card p-4" style="max-width: 500px;">
 <form method="POST">
     <div class="mb-3"><label class="form-label">Supplier</label>
@@ -9,15 +17,22 @@
         <option value="" disabled selected>Choose a supplier</option>
         {% for sup in suppliers %}<option value="{{ sup[0] }}">{{ sup[1] }}</option>{% endfor %}
     </select></div>
+
     <div class="mb-3"><label class="form-label">Product</label>
     <select name="product_id" class="form-select" required>
-        <option value="" disabled selected>Choose a product</option>
-        {% for prod in products %}<option value="{{ prod[0] }}">{{ prod[1] }}</option>{% endfor %}
+        <option value="" disabled {% if not prefill_product_id %}selected{% endif %}>Choose a product</option>
+        {% for prod in products %}
+        <option value="{{ prod[0] }}" {% if prefill_product_id and prod[0] == prefill_product_id %}selected{% endif %}>{{ prod[1] }}</option>
+        {% endfor %}
     </select></div>
+
     <div class="mb-3"><label class="form-label">Quantity</label>
-    <input type="number" class="form-control" name="quantity" placeholder="e.g., 50" required></div>
+    <input type="number" class="form-control" name="quantity" placeholder="e.g., 50"
+           value="{{ prefill_quantity or '' }}" required></div>
+
     <div class="mb-3"><label class="form-label">Unit Cost (Rs.)</label>
     <input type="number" step="0.01" class="form-control" name="unit_cost" placeholder="e.g., 1500" required></div>
+
     <button type="submit" class="btn btn-primary">Create Order</button>
     <a href="/view-purchase-orders" class="btn btn-outline-primary">Cancel</a>
 </form>
