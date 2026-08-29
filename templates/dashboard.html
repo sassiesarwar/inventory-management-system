@@ -16,7 +16,10 @@
     <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-icon" style="background:#DC2626;"><i class="bi bi-exclamation-triangle"></i></div>
-            <div><div class="stat-number">{{ low_stock_count }}</div><div class="stat-label">Low Stock Items</div></div>
+            <div>
+                <div class="stat-number">6</div>
+                <div class="stat-label">Low Stock Items</div>
+            </div>
         </div>
     </div>
     <div class="col-md-3">
@@ -33,31 +36,21 @@
     </div>
 </div>
 
+<!-- Categories Summary -->
 <div class="card p-4 mb-4">
-    <h5 class="mb-3">Products by Category</h5>
-    <canvas id="categoryChart" height="80"></canvas>
+    <h5 class="mb-3">📂 Products by Category</h5>
+    <div class="row g-3">
+        {% for i in range(category_names|length) %}
+        <div class="col-md-3">
+            <div class="card p-3 text-center">
+                <div style="font-size: 2rem;">📁</div>
+                <div style="font-weight: 600;">{{ category_names[i] }}</div>
+                <div class="text-muted">{{ category_counts[i] }} products</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    const ctx = document.getElementById('categoryChart');
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: {{ category_names|tojson }},
-            datasets: [{
-                label: 'Products',
-                data: {{ category_counts|tojson }},
-                backgroundColor: '#089BAB',
-                borderRadius: 6
-            }]
-        },
-        options: {
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-        }
-    });
-</script>
 
 <div class="row g-3 mb-4">
     <div class="col-md-6">
@@ -71,7 +64,7 @@
                 </div>
                 {% endfor %}
             {% else %}
-                <p class="text-muted mb-0">No low stock items 🎉</p>
+                <p class="text-muted mb-0">✅ No low stock items</p>
             {% endif %}
         </div>
     </div>
@@ -82,7 +75,7 @@
                 {% for act in recent_activity %}
                 <div class="py-2" style="border-bottom: 1px solid #F1F5F9; font-size:0.88rem;">
                     {% if act[1] == 'IN' %}📥{% else %}📤{% endif %}
-                    {{ act[2] }} units of {{ act[0] }} {% if act[1] == 'IN' %}received{% else %}removed{% endif %}
+                    {{ act[2] }} units of {{ act[0] }}
                     <div class="text-muted" style="font-size:0.78rem;">{{ act[3] }}</div>
                 </div>
                 {% endfor %}
