@@ -3,176 +3,298 @@
 
 <div class="page-header d-flex justify-content-between align-items-start">
     <div>
-        <h2>Products</h2>
-        <p>Manage your product catalog and stock levels</p>
+        <h2>Product Catalog</h2>
+        <p class="text-muted">Browse and manage your complete product inventory</p>
     </div>
     <a href="/add-product" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Product</a>
 </div>
 
-<div class="mb-3 d-flex gap-2 flex-wrap">
-    <input type="text" class="form-control" id="searchBox" placeholder="🔍 Search products by name or SKU..." onkeyup="filterProducts()" style="max-width: 350px;">
-    <select class="form-select" id="categoryFilter" onchange="filterByCategory()" style="max-width: 180px;">
-        <option value="all">All Categories</option>
-        {% set seen = [] %}
-        {% for product in products %}
-            {% if product[9] and product[9] not in seen %}
-                {% set _ = seen.append(product[9]) %}
-                <option value="{{ product[9] }}">{{ product[9] }}</option>
-            {% endif %}
-        {% endfor %}
-    </select>
-    <select class="form-select" id="sortSelect" onchange="sortProducts()" style="max-width: 180px;">
-        <option value="default">Sort By</option>
-        <option value="price-low">Price: Low to High</option>
-        <option value="price-high">Price: High to Low</option>
-        <option value="name">Name: A-Z</option>
-    </select>
+<!-- Category Filter Alert -->
+{% if request.args.get('category') %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert" style="background: #EFF6FF; border-color: #BFDBFE; color: #1E40AF;">
+        <i class="bi bi-funnel"></i> 
+        Showing products in category: 
+        <strong>{{ category_name or 'Selected Category' }}</strong>
+        <a href="/view-products" class="btn btn-sm btn-outline-primary ms-3">
+            <i class="bi bi-x-circle"></i> Clear Filter
+        </a>
+    </div>
+{% endif %}
+
+<!-- Search and Filters -->
+<div class="card p-3 mb-4">
+    <div class="row g-2 align-items-center">
+        <div class="col-md-5">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" class="form-control border-start-0" id="searchBox" 
+                       placeholder="Search by name, SKU, or category..." onkeyup="filterProducts()">
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="categoryFilter" onchange="filterProducts()">
+                <option value="all">📂 All Categories</option>
+                {% set seen = [] %}
+                {% for product in products %}
+                    {% if product[11] and product[11] not in seen %}
+                        {% set _ = seen.append(product[11]) %}
+                        <option value="{{ product[11] }}">{{ product[11] }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" id="sortSelect" onchange="sortProducts()">
+                <option value="default">Sort By</option>
+                <option value="name">Name A-Z</option>
+                <option value="price-low">Price: Low → High</option>
+                <option value="price-high">Price: High → Low</option>
+                <option value="stock-low">Stock: Low → High</option>
+            </select>
+        </div>
+        <div class="col-md-2 text-end">
+            <button class="btn btn-outline-primary btn-sm" onclick="exportCSV()">
+                <i class="bi bi-download"></i> Export
+            </button>
+        </div>
+    </div>
 </div>
 
-{% if products|length == 0 %}
-<div class="empty-state card">
-    <i class="bi bi-basket3"></i>
-    <h5>No products yet</h5>
-    <p>Add your first product to start tracking inventory.</p>
-    <a href="/add-product" class="btn btn-primary">+ Add Product</a>
-</div>
-{% else %}
-
-<div class="row mb-4 g-3">
+<!-- Stats -->
+<div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="stat-card">
-            <div class="stat-icon"><i class="bi bi-basket3"></i></div>
-            <div><div class="stat-number">{{ products|length }}</div><div class="stat-label">Total Products</div></div>
+            <div class="stat-icon" style="background:#089BAB;"><i class="bi bi-box-seam"></i></div>
+            <div>
+                <div class="stat-number">{{ products|length }}</div>
+                <div class="stat-label">Total Products</div>
+            </div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="stat-card">
             <div class="stat-icon" style="background:#DC2626;"><i class="bi bi-exclamation-triangle"></i></div>
-            <div><div class="stat-number">{{ products|selectattr('5', 'le', 10)|list|length }}</div><div class="stat-label">Low Stock Items</div></div>
+            <div>
+                <div class="stat-number">{{ low_stock_count }}</div>
+                <div class="stat-label">Low Stock Items</div>
+            </div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="stat-card">
             <div class="stat-icon" style="background:#059669;"><i class="bi bi-check-circle"></i></div>
-            <div><div class="stat-number">{{ products|sum(attribute='5') }}</div><div class="stat-label">Total Units in Stock</div></div>
+            <div>
+                <div class="stat-number">{{ total_stock_units }}</div>
+                <div class="stat-label">Total Units in Stock</div>
+            </div>
         </div>
     </div>
 </div>
 
-<table class="table table-hover" id="productGrid">
-    <thead>
-        <tr><th></th><th>Product</th><th>SKU</th><th>Category</th><th>Stock</th><th></th></tr>
-    </thead>
-    <tbody>
-        {% for product in products %}
-        <tr class="product-row" style="cursor: pointer;" data-price="{{ product[4] }}" data-bs-toggle="modal" data-bs-target="#modal{{ product[0] }}">
-            <td style="width:50px;">
-                {% set pname = product[1]|lower %}
-                {% if 'laptop' in pname or 'macbook' in pname %}{% set icon, bg, color = 'bi-laptop', '#EFF6FF', '#2563EB' %}
-                {% elif 'phone' in pname or 'iphone' in pname %}{% set icon, bg, color = 'bi-phone', '#FDF2F8', '#DB2777' %}
-                {% elif 'headphone' in pname or 'headset' in pname %}{% set icon, bg, color = 'bi-headphones', '#F5F3FF', '#7C3AED' %}
-                {% elif 'speaker' in pname %}{% set icon, bg, color = 'bi-speaker', '#FFF7ED', '#EA580C' %}
-                {% elif 'charger' in pname or 'cable' in pname %}{% set icon, bg, color = 'bi-plug', '#ECFDF5', '#059669' %}
-                {% elif 'mouse' in pname %}{% set icon, bg, color = 'bi-mouse2', '#FEF3C7', '#B45309' %}
-                {% elif 'keyboard' in pname %}{% set icon, bg, color = 'bi-keyboard', '#E0F2FE', '#0284C7' %}
-                {% elif 'monitor' in pname or 'display' in pname %}{% set icon, bg, color = 'bi-display', '#EEF2FF', '#4F46E5' %}
-                {% elif 'router' in pname or 'switch' in pname or 'access point' in pname %}{% set icon, bg, color = 'bi-router', '#F0FDF4', '#16A34A' %}
-                {% elif 'server' in pname %}{% set icon, bg, color = 'bi-hdd-network', '#FEF2F2', '#DC2626' %}
-                {% elif 'desktop' in pname or 'workstation' in pname %}{% set icon, bg, color = 'bi-pc-display', '#F5F5F4', '#57534E' %}
-                {% elif 'paper' in pname or 'pen' in pname or 'marker' in pname or 'note' in pname or 'stapler' in pname %}{% set icon, bg, color = 'bi-pencil', '#FFFBEB', '#D97706' %}
-                {% elif 'webcam' in pname %}{% set icon, bg, color = 'bi-camera-video', '#FDF4FF', '#A21CAF' %}
-                {% else %}{% set icon, bg, color = 'bi-box-seam', '#F1F5F9', '#64748B' %}
+<!-- Products Grid -->
+<div class="row g-3" id="productContainer">
+    {% for product in products %}
+    <div class="col-md-4 col-lg-3 product-card" 
+         data-name="{{ product[1]|lower }}" 
+         data-category="{{ product[11] or '' }}" 
+         data-price="{{ product[4] }}" 
+         data-stock="{{ product[5] }}">
+        <div class="card h-100 p-3">
+            <!-- Product Icon / Image -->
+            <div style="height: 120px; display:flex; align-items:center; justify-content:center; background:#F8FAFC; border-radius:8px; margin-bottom:12px; font-size: 3.5rem; overflow:hidden;">
+                {% if product[10] and product[10] != 'NULL' and product[10]|length > 10 %}
+                    <img src="{{ product[10] }}" alt="{{ product[1] }}"
+                         style="max-width:100%; max-height:100%; object-fit:contain;"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div style="display:none; align-items:center; justify-content:center; width:100%; height:100%;">
+                        {% set pname = product[1]|lower %}
+                        {% if 'laptop' in pname or 'macbook' in pname or 'spectre' in pname or 'thinkpad' in pname or 'zephyrus' in pname %}
+                            💻
+                        {% elif 'desktop' in pname or 'workstation' in pname or 'optiplex' in pname or 'precision' in pname or 'thinkstation' in pname or 'studio' in pname %}
+                            🖥️
+                        {% elif 'monitor' in pname or 'display' in pname or 'ultrasharp' in pname or 'ultrafine' in pname or 'odyssey' in pname or 'proart' in pname %}
+                            🖥️
+                        {% elif 'mouse' in pname or 'keyboard' in pname or 'mx master' in pname or 'mx mechanical' in pname or 'deathadder' in pname %}
+                            🖱️
+                        {% elif 'printer' in pname or 'scanner' in pname or 'laserjet' in pname or 'ecotank' in pname or 'imagescan' in pname %}
+                            🖨️
+                        {% elif 'switch' in pname or 'router' in pname or 'access point' in pname or 'catalyst' in pname or 'dream machine' in pname or 'fortigate' in pname %}
+                            📶
+                        {% elif 'headphone' in pname or 'earphone' in pname or 'jabra' in pname %}
+                            🎧
+                        {% else %}
+                            📦
+                        {% endif %}
+                    </div>
+                {% else %}
+                    {% set pname = product[1]|lower %}
+                    {% if 'laptop' in pname or 'macbook' in pname or 'spectre' in pname or 'thinkpad' in pname or 'zephyrus' in pname %}
+                        💻
+                    {% elif 'desktop' in pname or 'workstation' in pname or 'optiplex' in pname or 'precision' in pname or 'thinkstation' in pname or 'studio' in pname %}
+                        🖥️
+                    {% elif 'monitor' in pname or 'display' in pname or 'ultrasharp' in pname or 'ultrafine' in pname or 'odyssey' in pname or 'proart' in pname %}
+                        🖥️
+                    {% elif 'mouse' in pname or 'keyboard' in pname or 'mx master' in pname or 'mx mechanical' in pname or 'deathadder' in pname %}
+                        🖱️
+                    {% elif 'printer' in pname or 'scanner' in pname or 'laserjet' in pname or 'ecotank' in pname or 'imagescan' in pname %}
+                        🖨️
+                    {% elif 'switch' in pname or 'router' in pname or 'access point' in pname or 'catalyst' in pname or 'dream machine' in pname or 'fortigate' in pname %}
+                        📶
+                    {% elif 'headphone' in pname or 'earphone' in pname or 'jabra' in pname %}
+                        🎧
+                    {% else %}
+                        📦
+                    {% endif %}
                 {% endif %}
-                <div style="width:38px; height:38px; display:flex; align-items:center; justify-content:center; background:{{ bg }}; border-radius:10px;">
-                    <i class="bi {{ icon }}" style="font-size:1.15rem; color:{{ color }};"></i>
-                </div>
-            </td>
-            <td class="fw-medium">{{ product[1] }}</td>
-            <td class="text-muted">{{ product[2] or '—' }}</td>
-            <td>{% if product[9] %}<span class="badge" style="background:#EDE9FE; color:#6D28D9;">{{ product[9] }}</span>{% else %}—{% endif %}</td>
-            <td>
+            </div>
+
+            <!-- Product Name -->
+            <h6 class="mb-1">{{ product[1] }}</h6>
+            <div class="text-muted mb-2" style="font-size:0.8rem;">SKU: {{ product[2] or '—' }}</div>
+
+            <!-- Category Badge -->
+            {% if product[11] %}
+            <span class="badge mb-2" style="background:#EDE9FE; color:#6D28D9; padding:4px 12px;">
+                {{ product[11] }}
+            </span>
+            {% endif %}
+
+            <!-- Price & Stock -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold" style="color:#089BAB;">Rs. {{ "{:,.0f}".format(product[4]) }}</span>
                 {% if product[5] <= product[6] %}
-                    <span class="badge" style="background:#FEE2E2; color:#DC2626;">{{ product[5] }} — Low</span>
+                    <span class="badge" style="background:#FEE2E2; color:#DC2626;">{{ product[5] }} left</span>
                 {% else %}
                     <span class="badge" style="background:#DCFCE7; color:#059669;">{{ product[5] }} in stock</span>
                 {% endif %}
-            </td>
-            <td class="text-end text-muted"><i class="bi bi-chevron-right"></i></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+            </div>
 
-<!-- Detail modals live OUTSIDE the table — a <div> is not valid inside <tbody>,
-     and browsers silently break the table layout if you put one there. -->
-{% for product in products %}
-<div class="modal fade" id="modal{{ product[0] }}" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 14px;">
-            <div class="modal-header">
-                <h5 class="modal-title">{{ product[1] }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <table class="table table-borderless mb-0" style="font-size: 0.92rem;">
-                    <tr><td class="text-muted" style="width:140px;">SKU</td><td>{{ product[2] or '—' }}</td></tr>
-                    <tr><td class="text-muted">Category</td><td>{{ product[9] or '—' }}</td></tr>
-                    <tr><td class="text-muted">Description</td><td>{{ product[7] or 'No description available' }}</td></tr>
-                    <tr><td class="text-muted">Unit Price</td><td class="fw-bold" style="color:#089BAB;">Rs. {{ "{:,.0f}".format(product[4]) }}</td></tr>
-                    <tr><td class="text-muted">Current Stock</td><td>{{ product[5] }} units</td></tr>
-                    <tr><td class="text-muted">Reorder Level</td><td>{{ product[6] }} units</td></tr>
-                </table>
-            </div>
-            <div class="modal-footer">
-                <a href="/edit-product/{{ product[0] }}" class="btn btn-outline-primary">Edit</a>
-                <a href="/delete-product/{{ product[0] }}" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
+            <!-- Buttons -->
+            <div class="d-flex gap-2 mt-auto">
+                <a href="/product/{{ product[0] }}" class="btn btn-sm btn-outline-primary flex-fill">
+                    <i class="bi bi-eye"></i> View
+                </a>
+                <a href="/edit-product/{{ product[0] }}" class="btn btn-sm btn-outline-secondary flex-fill">
+                    <i class="bi bi-pencil"></i>
+                </a>
+                <a href="/delete-product/{{ product[0] }}" class="btn btn-sm btn-outline-danger flex-fill" 
+                   onclick="return confirm('Are you sure you want to delete this product?');">
+                    <i class="bi bi-trash"></i>
+                </a>
             </div>
         </div>
     </div>
+    {% endfor %}
 </div>
-{% endfor %}
-{% endif %}
 
 <script>
 function filterProducts() {
-    var input = document.getElementById('searchBox').value.toLowerCase();
-    var rows = document.querySelectorAll('#productGrid tbody tr.product-row');
-    rows.forEach(function(row) {
-        var text = row.textContent.toLowerCase();
-        row.style.display = text.includes(input) ? '' : 'none';
+    var searchText = document.getElementById('searchBox').value.toLowerCase().trim();
+    var categoryFilter = document.getElementById('categoryFilter').value;
+    var cards = document.querySelectorAll('.product-card');
+    var visibleCount = 0;
+    
+    cards.forEach(function(card) {
+        var name = card.getAttribute('data-name') || '';
+        var category = card.getAttribute('data-category') || '';
+        var show = true;
+        
+        if (searchText && !name.includes(searchText)) {
+            show = false;
+        }
+        
+        if (categoryFilter !== 'all' && category !== categoryFilter) {
+            show = false;
+        }
+        
+        card.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
     });
-}
-
-function filterByCategory() {
-    var selected = document.getElementById('categoryFilter').value;
-    var rows = document.querySelectorAll('#productGrid tbody tr.product-row');
-    rows.forEach(function(row) {
-        var badge = row.querySelector('.badge[style*="EDE9FE"]');
-        var category = badge ? badge.textContent.trim() : '';
-        row.style.display = (selected === 'all' || category === selected) ? '' : 'none';
-    });
+    
+    var noResults = document.getElementById('noResults');
+    if (!noResults) {
+        noResults = document.createElement('div');
+        noResults.id = 'noResults';
+        noResults.className = 'col-12 text-center py-5';
+        noResults.innerHTML = '<div style="font-size:3rem; color:#CBD5E1;">🔍</div><h5 style="color:#94A3B8;">No products found</h5><p style="color:#CBD5E1;">Try adjusting your search or filters</p>';
+        document.getElementById('productContainer').appendChild(noResults);
+    }
+    
+    if (visibleCount === 0) {
+        noResults.style.display = '';
+    } else {
+        noResults.style.display = 'none';
+    }
 }
 
 function sortProducts() {
     var sortValue = document.getElementById('sortSelect').value;
-    var tbody = document.querySelector('#productGrid tbody');
-    var rows = Array.from(tbody.querySelectorAll('tr.product-row'));
-
-    rows.sort(function(a, b) {
+    var container = document.getElementById('productContainer');
+    var cards = Array.from(container.querySelectorAll('.product-card'));
+    
+    var noResults = document.getElementById('noResults');
+    if (noResults) noResults.style.display = 'none';
+    
+    cards.sort(function(a, b) {
         if (sortValue === 'name') {
-            return a.children[1].textContent.localeCompare(b.children[1].textContent);
-        } else if (sortValue === 'price-low' || sortValue === 'price-high') {
-            var priceA = parseFloat(a.dataset.price);
-            var priceB = parseFloat(b.dataset.price);
-            return sortValue === 'price-low' ? priceA - priceB : priceB - priceA;
+            var nameA = a.querySelector('h6').textContent.toLowerCase();
+            var nameB = b.querySelector('h6').textContent.toLowerCase();
+            return nameA.localeCompare(nameB);
+        } else if (sortValue === 'price-low') {
+            var priceA = parseFloat(a.getAttribute('data-price') || 0);
+            var priceB = parseFloat(b.getAttribute('data-price') || 0);
+            return priceA - priceB;
+        } else if (sortValue === 'price-high') {
+            var priceA = parseFloat(a.getAttribute('data-price') || 0);
+            var priceB = parseFloat(b.getAttribute('data-price') || 0);
+            return priceB - priceA;
+        } else if (sortValue === 'stock-low') {
+            var stockA = parseInt(a.getAttribute('data-stock') || 0);
+            var stockB = parseInt(b.getAttribute('data-stock') || 0);
+            return stockA - stockB;
         }
         return 0;
     });
-
-    rows.forEach(function(row) {
-        tbody.appendChild(row);
+    
+    cards.forEach(function(card) {
+        container.appendChild(card);
     });
 }
+
+function exportCSV() {
+    var rows = [['Name', 'SKU', 'Category', 'Price', 'Stock']];
+    var visibleCards = document.querySelectorAll('.product-card:not([style*="display: none"])');
+    
+    visibleCards.forEach(function(card) {
+        var name = card.querySelector('h6').textContent.trim();
+        var skuElem = card.querySelector('.text-muted');
+        var sku = skuElem ? skuElem.textContent.replace('SKU: ', '').trim() : '';
+        var catBadge = card.querySelector('.badge[style*="EDE9FE"]');
+        var category = catBadge ? catBadge.textContent.trim() : '';
+        var price = card.querySelector('.fw-bold').textContent.replace('Rs. ', '').trim();
+        var stockBadge = card.querySelector('.badge[style*="FEE2E2"], .badge[style*="DCFCE7"]');
+        var stock = stockBadge ? stockBadge.textContent.trim() : '';
+        rows.push([name, sku, category, price, stock]);
+    });
+    
+    var csvContent = rows.map(function(r) {
+        return r.map(function(cell) {
+            return '"' + String(cell).replace(/"/g, '""') + '"';
+        }).join(',');
+    }).join('\n');
+    
+    var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'products_export.csv';
+    link.click();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    filterProducts();
+});
 </script>
 
 {% endblock %}
