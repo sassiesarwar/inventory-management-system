@@ -3,84 +3,159 @@ import mysql.connector
 from dotenv import load_dotenv
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import date, timedelta
+from datetime import date
 
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-this'
+app.secret_key = os.getenv("SECRET_KEY", "dev-only-change-this")
 
-DEV_MODE = False
+# ==================== LOGIN REQUIREMENT ====================
+DEV_MODE = os.getenv("DEV_MODE", "false").lower() == "true"
 
-from functools import wraps
+@app.before_request
+def require_login():
+    allowed_routes = ['login', 'signup', 'static', 'forgot_password', 'home', 'dev_login']
+    if 'user_id' in session or request.endpoint in allowed_routes:
+        return
 
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if session.get('role') != 'admin':
-            flash('⛔ Only Admins can do this. Contact your administrator.')
-            return redirect('/dashboard')
-        return f(*args, **kwargs)
-    return decorated_function
+    if DEV_MODE:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM user WHERE role='admin' LIMIT 1")
+        user = cursor.fetchone()
+        conn.close()
+        if user:
+            session['user_id'] = user[0]
+            session['username'] = user[1]
+            session['role'] = user[4]
+            return
+        else:
+            return "DEV_MODE is on, but no admin user exists yet. Run 'python create_admin.py' first."
 
-def get_notifications(user_id):
+    return redirect('/login')
+
+@app.route('/dev-login/<role>')
+def dev_login(role):
+    if not DEV_MODE:
+        return redirect('/login')
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM user WHERE role=%s LIMIT 1", (role,))
+    user = cursor.fetchone()
+    conn.close()
+    if not user:
+        return f"No user with role '{role}' exists yet. Add one from /add-user first."
+    session['user_id'] = user[0]
+    session['username'] = user[1]
+    session['role'] = user[4]
+    return redirect('/dashboard' if role == 'admin' else '/user/dashboard')
+
+# ==================== DATABASE CONNECTION ====================
+def get_db_connection():
+    connection = mysql.connector.connect(
+        host=os.getenv("DB_HOST", "localhost"),
+        user=os.getenv("DB_USER", "root"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_NAME", "inventory_db")
+    )
+    return connection
+
+
+def mark_overdue_checkouts():
+    """Flip any checked_out item whose due_date has passed to 'overdue'."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE checkout SET status = 'overdue'
+        WHERE status = 'checked_out' AND due_date < CURDATE()
+    """)
+    conn.commit()
+    conn.close()
+
+
+def build_notifications():
+    """Builds live notifications from real data — no separate table needed."""
     conn = get_db_connection()
     cursor = conn.cursor()
     notifications = []
-    count = 0
-    
+
     cursor.execute("""
-        SELECT product_id, product_name, quantity_in_stock, reorder_level
-        FROM product 
-        WHERE quantity_in_stock <= COALESCE(reorder_level, 10)
-        ORDER BY quantity_in_stock ASC LIMIT 10
+        SELECT product_name, quantity_in_stock, reorder_level
+        FROM product WHERE quantity_in_stock <= reorder_level
+        ORDER BY quantity_in_stock ASC
     """)
-    low_stock = cursor.fetchall()
-    for item in low_stock:
-        notif_type = 'danger' if item[2] <= 2 else 'warning'
+    for name, qty, reorder in cursor.fetchall():
         notifications.append({
-            'type': notif_type,
-            'message': f'{item[1]} - Only {item[2]} left (Min: {item[3] or 10})',
+            'type': 'danger' if qty == 0 else 'warning',
+            'message': f"Low stock: {name} has only {qty} left (reorder at {reorder})",
             'time': 'Now',
-            'link': f'/add-purchase-order?product_id={item[0]}'
+            'link': '/view-products'
         })
-        count += 1
-    
+
     cursor.execute("SELECT COUNT(*) FROM purchase_order WHERE status='pending'")
     pending = cursor.fetchone()[0]
     if pending > 0:
         notifications.append({
-            'type': 'warning',
-            'message': f'{pending} purchase order(s) pending approval',
+            'type': 'info',
+            'message': f"You have {pending} pending purchase order(s) awaiting delivery",
             'time': 'Now',
             'link': '/view-purchase-orders'
         })
-        count += pending
-    
-    cursor.execute("SELECT COUNT(*) FROM checkout WHERE user_id = %s AND status='overdue'", (user_id,))
+
+    cursor.execute("SELECT COUNT(*) FROM checkout WHERE status='overdue'")
     overdue = cursor.fetchone()[0]
     if overdue > 0:
         notifications.append({
             'type': 'danger',
-            'message': f'You have {overdue} overdue item(s)! Please return them.',
+            'message': f"{overdue} checked-out item(s) are overdue for return",
             'time': 'Now',
-            'link': '/user/dashboard'
+            'link': '/view-stock-transactions'
         })
-        count += overdue
-    
-    conn.close()
-    notifications.sort(key=lambda x: {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}.get(x['type'], 4))
-    notifications = notifications[:10]
-    return notifications, count
 
-def get_db_connection():
-    connection = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password=os.getenv("DB_PASSWORD"),
-        database="inventory_db"
-    )
-    return connection
+    conn.close()
+    return notifications
+
+
+@app.context_processor
+def inject_notifications():
+    """Makes notifications/notification_count available to every template automatically."""
+    if session.get('role') == 'admin':
+        notifs = build_notifications()
+        return {'notifications': notifs, 'notification_count': len(notifs)}
+    return {'notifications': [], 'notification_count': 0}
+
+
+@app.route('/notifications')
+def notifications_page():
+    notifs = build_notifications()
+    return render_template('notifications.html', notifications=notifs, notification_count=len(notifs))
+
+
+@app.route('/product/<int:id>')
+def product_detail(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.*, c.category_name
+        FROM product p LEFT JOIN category c ON p.category_id = c.category_id
+        WHERE p.product_id = %s
+    """, (id,))
+    product = cursor.fetchone()
+    if not product:
+        conn.close()
+        flash('Product not found', 'error')
+        return redirect('/view-products')
+
+    cursor.execute("SELECT * FROM product WHERE category_id = %s AND product_id != %s LIMIT 4", (product[3], id))
+    related_products = cursor.fetchall()
+    conn.close()
+    return render_template('product_detail.html', product=product, related_products=related_products)
+
+# ==================== AUTH ROUTES ====================
+@app.route('/forgot-password')
+def forgot_password():
+    return render_template('forgot_password.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -109,15 +184,10 @@ def signup():
         )
         conn.commit()
         conn.close()
-        
         flash('✅ Account created! Please sign in.')
         return redirect('/login')
 
     return render_template('signup.html')
-
-@app.route('/forgot-password')
-def forgot_password():
-    return render_template('forgot_password.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -135,7 +205,7 @@ def login():
             session['user_id'] = user[0]
             session['username'] = user[1]
             session['role'] = user[4]
-            
+
             if user[4] == 'admin':
                 return redirect('/dashboard')
             else:
@@ -166,47 +236,16 @@ def test_db():
     except Exception as e:
         return f"Database connection failed: {str(e)}"
 
-@app.route('/notifications')
-def notifications_page():
-    if 'user_id' not in session:
-        return redirect('/login')
-    
-    notifications, count = get_notifications(session['user_id'])
-    return render_template('notifications.html', 
-                         notifications=notifications, 
-                         notification_count=count)
-
-@app.before_request
-def require_login():
-    allowed_routes = ['login', 'signup', 'static', 'forgot_password', 'home', 'test_db']
-    
-    if 'user_id' in session or request.endpoint in allowed_routes:
-        return
-
-    return redirect('/login')
-
-@app.context_processor
-def inject_notifications():
-    if 'user_id' in session:
-        notifications, count = get_notifications(session['user_id'])
-        return {
-            'notifications': notifications,
-            'notification_count': count
-        }
-    return {
-        'notifications': [],
-        'notification_count': 0
-    }
+# ==================== USER (STAFF) ROUTES ====================
 
 @app.route('/user/dashboard')
 def user_dashboard():
-    if 'user_id' not in session:
-        return redirect('/login')
-    
+    mark_overdue_checkouts()
+
     conn = get_db_connection()
     cursor = conn.cursor()
     user_id = session['user_id']
-    
+
     cursor.execute("""
         SELECT c.*, p.product_name, p.sku, p.unit_price
         FROM checkout c
@@ -215,240 +254,212 @@ def user_dashboard():
         ORDER BY c.due_date ASC
     """, (user_id,))
     my_items = cursor.fetchall()
-    
+
     cursor.execute("""
         SELECT c.*, p.product_name
         FROM checkout c
         JOIN product p ON c.product_id = p.product_id
         WHERE c.user_id = %s
-        ORDER BY c.created_at DESC LIMIT 10
+        ORDER BY c.checkout_id DESC LIMIT 10
     """, (user_id,))
     history = cursor.fetchall()
-    
+
     cursor.execute("""
-        SELECT p.*, c.category_name
+        SELECT p.product_id, p.product_name, p.unit_price, p.available_quantity, c.category_name
         FROM product p
         LEFT JOIN category c ON p.category_id = c.category_id
         WHERE p.available_quantity > 0
         ORDER BY p.product_name
     """)
     available_products = cursor.fetchall()
-    
+
     conn.close()
-    
-    return render_template('user_dashboard.html', 
-                         my_items=my_items,
-                         history=history,
-                         available_products=available_products,
-                         today=date.today())
+
+    return render_template('user_dashboard.html',
+                            my_items=my_items,
+                            history=history,
+                            available_products=available_products,
+                            today=date.today())
 
 @app.route('/checkout/<int:product_id>', methods=['GET', 'POST'])
 def checkout_product(product_id):
-    if 'user_id' not in session:
-        return redirect('/login')
-    
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     cursor.execute("SELECT * FROM product WHERE product_id = %s", (product_id,))
     product = cursor.fetchone()
-    
+
     if not product:
+        conn.close()
         flash('Product not found!', 'error')
         return redirect('/user/dashboard')
-    
-    if product[9] <= 0:
+
+    if product[8] <= 0:  # available_quantity column
+        conn.close()
         flash('This product is currently not available!', 'error')
         return redirect('/user/dashboard')
-    
+
     if request.method == 'POST':
         purpose = request.form['purpose']
         due_date = request.form['due_date']
         user_id = session['user_id']
-        
+
         cursor.execute("""
-            SELECT COUNT(*) FROM checkout 
+            SELECT COUNT(*) FROM checkout
             WHERE user_id = %s AND status = 'overdue'
         """, (user_id,))
         overdue_count = cursor.fetchone()[0]
-        
+
         if overdue_count > 0:
             flash('⚠️ You have overdue items! Please return them first.', 'error')
             conn.close()
             return redirect('/user/dashboard')
-        
+
         cursor.execute("""
-            INSERT INTO checkout (user_id, product_id, checkout_date, due_date, purpose, status)
-            VALUES (%s, %s, CURDATE(), %s, %s, 'checked_out')
+            INSERT INTO checkout (user_id, product_id, checkout_date, due_date, status, purpose)
+            VALUES (%s, %s, CURDATE(), %s, 'checked_out', %s)
         """, (user_id, product_id, due_date, purpose))
-        
+
         cursor.execute("""
-            UPDATE product 
-            SET available_quantity = available_quantity - 1,
-                quantity_in_stock = quantity_in_stock - 1
+            UPDATE product
+            SET available_quantity = available_quantity - 1
             WHERE product_id = %s
         """, (product_id,))
-        
+
         cursor.execute("""
             INSERT INTO stock_transaction (product_id, user_id, transaction_type, quantity, reference)
             VALUES (%s, %s, 'OUT', 1, %s)
         """, (product_id, user_id, f'Checked out by {session["username"]}'))
-        
+
         conn.commit()
         conn.close()
         flash('✅ Product checked out successfully!')
         return redirect('/user/dashboard')
-    
+
     conn.close()
     return render_template('checkout_product.html', product=product, today=date.today())
 
 @app.route('/return/<int:checkout_id>', methods=['GET', 'POST'])
 def return_product(checkout_id):
-    if 'user_id' not in session:
-        return redirect('/login')
-    
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     cursor.execute("""
-        SELECT c.*, p.product_name, p.product_id 
+        SELECT c.*, p.product_name, p.product_id
         FROM checkout c
         JOIN product p ON c.product_id = p.product_id
         WHERE c.checkout_id = %s AND c.user_id = %s
     """, (checkout_id, session['user_id']))
     checkout = cursor.fetchone()
-    
+
     if not checkout:
+        conn.close()
         flash('Invalid checkout record!', 'error')
         return redirect('/user/dashboard')
-    
-    if checkout[5] == 'returned':
+
+    if checkout[5] == 'returned':  # status column
+        conn.close()
         flash('This item has already been returned!', 'warning')
         return redirect('/user/dashboard')
-    
+
     if request.method == 'POST':
         condition = request.form['condition']
         notes = request.form['notes']
-        
+
         cursor.execute("""
-            UPDATE checkout 
-            SET return_date = CURDATE(), 
+            UPDATE checkout
+            SET return_date = CURDATE(),
                 status = 'returned',
                 condition_on_return = %s,
                 notes = %s
             WHERE checkout_id = %s
         """, (condition, notes, checkout_id))
-        
+
         cursor.execute("""
-            UPDATE product 
-            SET available_quantity = available_quantity + 1,
-                quantity_in_stock = quantity_in_stock + 1
+            UPDATE product
+            SET available_quantity = available_quantity + 1
             WHERE product_id = %s
-        """, (checkout[2],))
-        
+        """, (checkout[2],))  # product_id from checkout
+
         cursor.execute("""
             INSERT INTO stock_transaction (product_id, user_id, transaction_type, quantity, reference)
             VALUES (%s, %s, 'IN', 1, %s)
         """, (checkout[2], session['user_id'], f'Returned by {session["username"]}'))
-        
+
         conn.commit()
         conn.close()
         flash('✅ Product returned successfully!')
         return redirect('/user/dashboard')
-    
+
     conn.close()
     return render_template('return_product.html', checkout=checkout)
 
 @app.route('/user/history')
 def user_history():
-    if 'user_id' not in session:
-        return redirect('/login')
-    
     conn = get_db_connection()
     cursor = conn.cursor()
     user_id = session['user_id']
-    
+
     cursor.execute("""
         SELECT c.*, p.product_name, p.unit_price
         FROM checkout c
         JOIN product p ON c.product_id = p.product_id
         WHERE c.user_id = %s
-        ORDER BY c.created_at DESC
+        ORDER BY c.checkout_id DESC
     """, (user_id,))
     history = cursor.fetchall()
-    
+
     conn.close()
     return render_template('user_history.html', history=history)
 
+# ==================== PRODUCT ROUTES ====================
+
 @app.route('/add-product', methods=['GET', 'POST'])
 def add_product():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
     if request.method == 'POST':
         product_name = request.form['product_name']
-        sku = request.form['sku']
+        sku = request.form['sku'] or None
+        category_id = request.form.get('category_id') or None
         description = request.form['description']
         unit_price = request.form['unit_price']
         quantity_in_stock = request.form['quantity_in_stock']
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # ✅ Prevent duplicate SKU
-        cursor.execute("SELECT product_id FROM product WHERE sku = %s", (sku,))
-        if cursor.fetchone():
-            conn.close()
-            flash(f'❌ SKU "{sku}" already exists. Please use a unique SKU.')
-            return render_template('add_product.html')
+        image_url = request.form.get('image_url') or None
 
         cursor.execute(
-            """INSERT INTO product (product_name, sku, description, unit_price, quantity_in_stock, available_quantity) 
-               VALUES (%s, %s, %s, %s, %s, %s)""",
-            (product_name, sku, description, unit_price, quantity_in_stock, quantity_in_stock)
+            """INSERT INTO product (product_name, sku, category_id, description, unit_price,
+                                     quantity_in_stock, available_quantity, image_url)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+            (product_name, sku, category_id, description, unit_price,
+             quantity_in_stock, quantity_in_stock, image_url)
         )
         conn.commit()
         conn.close()
         flash('✅ Product added successfully!')
         return redirect('/view-products')
-    
-    return render_template('add_product.html')
+
+    cursor.execute("SELECT * FROM category")
+    categories = cursor.fetchall()
+    conn.close()
+    return render_template('add_product.html', categories=categories)
 
 @app.route('/view-products')
 def view_products():
-    category_id = request.args.get('category')
-
     conn = get_db_connection()
     cursor = conn.cursor()
-
-    if category_id:
-        cursor.execute("SELECT category_name FROM category WHERE category_id = %s", (category_id,))
-        cat_result = cursor.fetchone()
-        category_name = cat_result[0] if cat_result else None
-
-        cursor.execute("""
-            SELECT p.*, c.category_name
-            FROM product p
-            LEFT JOIN category c ON p.category_id = c.category_id
-            WHERE p.category_id = %s
-        """, (category_id,))
-    else:
-        category_name = None
-        cursor.execute("""
-            SELECT p.*, c.category_name
-            FROM product p
-            LEFT JOIN category c ON p.category_id = c.category_id
-        """)
-
+    cursor.execute("""
+        SELECT p.*, c.category_name
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.category_id
+    """)
     products = cursor.fetchall()
-    conn.close()
-
-    # ✅ FIX: calculate these live from actual data instead of hardcoding them
-    total_stock_units = sum(p[5] for p in products)
     low_stock_count = sum(1 for p in products if p[5] <= p[6])
-
-    return render_template('view_products.html',
-                         products=products,
-                         category_name=category_name,
-                         total_stock_units=total_stock_units,
-                         low_stock_count=low_stock_count)
+    total_stock_units = sum(p[5] for p in products)
+    conn.close()
+    return render_template('view_products.html', products=products,
+                            low_stock_count=low_stock_count, total_stock_units=total_stock_units)
 
 @app.route('/edit-product/<int:id>', methods=['GET', 'POST'])
 def edit_product(id):
@@ -457,17 +468,23 @@ def edit_product(id):
 
     if request.method == 'POST':
         product_name = request.form['product_name']
-        sku = request.form['sku']
+        sku = request.form['sku'] or None
+        category_id = request.form.get('category_id') or None
         description = request.form['description']
         unit_price = request.form['unit_price']
-        quantity_in_stock = request.form['quantity_in_stock']
+        new_qty = int(request.form['quantity_in_stock'])
+        image_url = request.form.get('image_url') or None
+
+        cursor.execute("SELECT quantity_in_stock, available_quantity FROM product WHERE product_id=%s", (id,))
+        old_qty, old_avail = cursor.fetchone()
+        new_avail = old_avail + (new_qty - old_qty)
 
         cursor.execute(
-            """UPDATE product 
-               SET product_name=%s, sku=%s, description=%s, unit_price=%s, quantity_in_stock=%s,
-                   available_quantity = %s
+            """UPDATE product
+               SET product_name=%s, sku=%s, category_id=%s, description=%s, unit_price=%s,
+                   quantity_in_stock=%s, available_quantity=%s, image_url=%s
                WHERE product_id=%s""",
-            (product_name, sku, description, unit_price, quantity_in_stock, quantity_in_stock, id)
+            (product_name, sku, category_id, description, unit_price, new_qty, new_avail, image_url, id)
         )
         conn.commit()
         conn.close()
@@ -476,11 +493,12 @@ def edit_product(id):
 
     cursor.execute("SELECT * FROM product WHERE product_id=%s", (id,))
     product = cursor.fetchone()
+    cursor.execute("SELECT * FROM category")
+    categories = cursor.fetchall()
     conn.close()
-    return render_template('edit_product.html', product=product)
+    return render_template('edit_product.html', product=product, categories=categories)
 
 @app.route('/delete-product/<int:id>')
-@admin_required
 def delete_product(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -490,37 +508,7 @@ def delete_product(id):
     flash('Product deleted successfully!')
     return redirect('/view-products')
 
-@app.route('/product/<int:product_id>')
-def product_detail(product_id):
-    if 'user_id' not in session:
-        return redirect('/login')
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("""
-        SELECT p.*, c.category_name 
-        FROM product p
-        LEFT JOIN category c ON p.category_id = c.category_id
-        WHERE p.product_id = %s
-    """, (product_id,))
-    product = cursor.fetchone()
-    
-    if not product:
-        flash('Product not found!', 'error')
-        return redirect('/view-products')
-    
-    cursor.execute("""
-        SELECT * FROM product 
-        WHERE category_id = %s AND product_id != %s 
-        LIMIT 4
-    """, (product[3], product_id))
-    related_products = cursor.fetchall()
-    
-    conn.close()
-    return render_template('product_detail.html', 
-                         product=product, 
-                         related_products=related_products)
+# ==================== CATEGORY ROUTES ====================
 
 @app.route('/add-category', methods=['GET', 'POST'])
 def add_category():
@@ -546,26 +534,21 @@ def view_categories():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT c.*, COUNT(p.product_id) as product_count
+        SELECT c.category_id, c.category_name, c.description, COUNT(p.product_id)
         FROM category c
         LEFT JOIN product p ON c.category_id = p.category_id
         GROUP BY c.category_id, c.category_name, c.description
     """)
     categories = cursor.fetchall()
 
-    # ✅ fetch all products once, then group them by category_id
-    # so each category row can show its own products inline (no page navigation)
     cursor.execute("SELECT * FROM product")
     all_products = cursor.fetchall()
-    conn.close()
-
     products_by_category = {}
     for p in all_products:
         products_by_category.setdefault(p[3], []).append(p)
 
-    return render_template('view_categories.html',
-                         categories=categories,
-                         products_by_category=products_by_category)
+    conn.close()
+    return render_template('view_categories.html', categories=categories, products_by_category=products_by_category)
 
 @app.route('/edit-category/<int:id>', methods=['GET', 'POST'])
 def edit_category(id):
@@ -591,7 +574,6 @@ def edit_category(id):
     return render_template('edit_category.html', category=category)
 
 @app.route('/delete-category/<int:id>')
-@admin_required
 def delete_category(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -600,6 +582,8 @@ def delete_category(id):
     conn.close()
     flash('Category deleted successfully!')
     return redirect('/view-categories')
+
+# ==================== SUPPLIER ROUTES ====================
 
 @app.route('/add-supplier', methods=['GET', 'POST'])
 def add_supplier():
@@ -614,7 +598,7 @@ def add_supplier():
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            """INSERT INTO supplier (supplier_name, contact_person, phone, email, address, payment_terms) 
+            """INSERT INTO supplier (supplier_name, contact_person, phone, email, address, payment_terms)
                VALUES (%s, %s, %s, %s, %s, %s)""",
             (supplier_name, contact_person, phone, email, address, payment_terms)
         )
@@ -648,8 +632,8 @@ def edit_supplier(id):
         payment_terms = request.form['payment_terms']
 
         cursor.execute(
-            """UPDATE supplier 
-               SET supplier_name=%s, contact_person=%s, phone=%s, email=%s, address=%s, payment_terms=%s 
+            """UPDATE supplier
+               SET supplier_name=%s, contact_person=%s, phone=%s, email=%s, address=%s, payment_terms=%s
                WHERE supplier_id=%s""",
             (supplier_name, contact_person, phone, email, address, payment_terms, id)
         )
@@ -664,7 +648,6 @@ def edit_supplier(id):
     return render_template('edit_supplier.html', supplier=supplier)
 
 @app.route('/delete-supplier/<int:id>')
-@admin_required
 def delete_supplier(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -674,22 +657,28 @@ def delete_supplier(id):
     flash('Supplier deleted successfully!')
     return redirect('/view-suppliers')
 
+# ==================== PURCHASE ORDER ROUTES ====================
+
 @app.route('/add-purchase-order', methods=['GET', 'POST'])
 def add_purchase_order():
     conn = get_db_connection()
     cursor = conn.cursor()
+
     if request.method == 'POST':
         supplier_id = request.form['supplier_id']
         product_id = request.form['product_id']
         quantity = request.form['quantity']
         unit_cost = request.form['unit_cost']
         total = float(quantity) * float(unit_cost)
+
         cursor.execute(
-            "INSERT INTO purchase_order (supplier_id, order_date, status, total_amount) VALUES (%s, CURDATE(), 'pending', %s)",
-            (supplier_id, total)
+            "INSERT INTO purchase_order (supplier_id, user_id, order_date, status, total_amount) "
+            "VALUES (%s, %s, CURDATE(), 'pending', %s)",
+            (supplier_id, session['user_id'], total)
         )
         conn.commit()
         po_id = cursor.lastrowid
+
         cursor.execute(
             "INSERT INTO purchase_order_item (purchase_order_id, product_id, quantity, unit_cost) VALUES (%s, %s, %s, %s)",
             (po_id, product_id, quantity, unit_cost)
@@ -699,49 +688,35 @@ def add_purchase_order():
         flash('✅ Purchase order created successfully!')
         return redirect('/view-purchase-orders')
 
-    # ✅ Handle ?product_id=X coming from a "Reorder Now" notification
     prefill_product_id = request.args.get('product_id', type=int)
-    prefill_quantity = None
-    if prefill_product_id:
-        cursor.execute(
-            "SELECT quantity_in_stock, reorder_level FROM product WHERE product_id = %s",
-            (prefill_product_id,)
-        )
-        row = cursor.fetchone()
-        if row:
-            current_stock, reorder_level = row[0], row[1] or 10
-            suggested = (reorder_level * 2) - current_stock
-            prefill_quantity = suggested if suggested > 0 else reorder_level
+    prefill_quantity = request.args.get('quantity', type=int)
 
     cursor.execute("SELECT * FROM supplier")
     suppliers = cursor.fetchall()
     cursor.execute("SELECT * FROM product")
     products = cursor.fetchall()
     conn.close()
-    return render_template('add_purchase_order.html',
-                         suppliers=suppliers,
-                         products=products,
-                         prefill_product_id=prefill_product_id,
-                         prefill_quantity=prefill_quantity)
+    return render_template('add_purchase_order.html', suppliers=suppliers, products=products,
+                            prefill_product_id=prefill_product_id, prefill_quantity=prefill_quantity)
 
 @app.route('/view-purchase-orders')
 def view_purchase_orders():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT po.purchase_order_id, s.supplier_name, p.product_name, 
+        SELECT po.purchase_order_id, s.supplier_name, p.product_name,
                poi.quantity, po.status, po.order_date
         FROM purchase_order po
         JOIN supplier s ON po.supplier_id = s.supplier_id
         JOIN purchase_order_item poi ON po.purchase_order_id = poi.purchase_order_id
         JOIN product p ON poi.product_id = p.product_id
+        ORDER BY po.purchase_order_id DESC
     """)
     orders = cursor.fetchall()
     conn.close()
     return render_template('view_purchase_orders.html', orders=orders)
 
 @app.route('/receive-purchase-order/<int:id>')
-@admin_required
 def receive_purchase_order(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -757,7 +732,7 @@ def receive_purchase_order(id):
             (quantity, quantity, product_id)
         )
         cursor.execute(
-            """INSERT INTO stock_transaction (product_id, transaction_type, quantity, reference) 
+            """INSERT INTO stock_transaction (product_id, transaction_type, quantity, reference)
                VALUES (%s, 'IN', %s, %s)""",
             (product_id, quantity, f'Received from Purchase Order #{id}')
         )
@@ -766,6 +741,8 @@ def receive_purchase_order(id):
     conn.close()
     flash('✅ Purchase order marked as received — stock updated automatically!')
     return redirect('/view-purchase-orders')
+
+# ==================== USER MANAGEMENT ROUTES (ADMIN) ====================
 
 @app.route('/add-user', methods=['GET', 'POST'])
 def add_user():
@@ -792,7 +769,6 @@ def add_user():
     return render_template('add_user.html')
 
 @app.route('/view-users')
-@admin_required
 def view_users():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -802,7 +778,6 @@ def view_users():
     return render_template('view_users.html', users=users)
 
 @app.route('/edit-user/<int:id>', methods=['GET', 'POST'])
-@admin_required
 def edit_user(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -828,7 +803,6 @@ def edit_user(id):
     return render_template('edit_user.html', user=user)
 
 @app.route('/delete-user/<int:id>')
-@admin_required
 def delete_user(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -837,6 +811,8 @@ def delete_user(id):
     conn.close()
     flash('User deleted successfully!')
     return redirect('/view-users')
+
+# ==================== STOCK TRANSACTION ROUTES ====================
 
 @app.route('/add-stock-transaction', methods=['GET', 'POST'])
 def add_stock_transaction():
@@ -862,16 +838,12 @@ def add_stock_transaction():
             (product_id, transaction_type, quantity, reference)
         )
 
-        if transaction_type == 'IN':
-            cursor.execute(
-                "UPDATE product SET quantity_in_stock = quantity_in_stock + %s, available_quantity = available_quantity + %s WHERE product_id = %s",
-                (quantity, quantity, product_id)
-            )
-        else:
-            cursor.execute(
-                "UPDATE product SET quantity_in_stock = quantity_in_stock - %s, available_quantity = available_quantity - %s WHERE product_id = %s",
-                (quantity, quantity, product_id)
-            )
+        sign = 1 if transaction_type == 'IN' else -1
+        cursor.execute(
+            "UPDATE product SET quantity_in_stock = quantity_in_stock + %s, "
+            "available_quantity = available_quantity + %s WHERE product_id = %s",
+            (sign * quantity, sign * quantity, product_id)
+        )
 
         conn.commit()
         conn.close()
@@ -888,7 +860,7 @@ def view_stock_transactions():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT st.transaction_id, p.product_name, st.transaction_type, 
+        SELECT st.transaction_id, p.product_name, st.transaction_type,
                st.quantity, st.transaction_date, st.reference
         FROM stock_transaction st
         JOIN product p ON st.product_id = p.product_id
@@ -898,21 +870,17 @@ def view_stock_transactions():
     conn.close()
     return render_template('view_stock_transactions.html', transactions=transactions)
 
+# ==================== DASHBOARD (ADMIN) ====================
+
 @app.route('/dashboard')
 def dashboard():
-    if 'user_id' not in session:
-        return redirect('/login')
-    
     conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("SELECT COUNT(*) FROM product")
     total_products = cursor.fetchone()[0]
 
-    cursor.execute("""
-        SELECT COUNT(*) FROM product 
-        WHERE quantity_in_stock <= COALESCE(reorder_level, 10)
-    """)
+    cursor.execute("SELECT COUNT(*) FROM product WHERE quantity_in_stock <= reorder_level")
     low_stock_count = cursor.fetchone()[0]
 
     cursor.execute("SELECT COUNT(*) FROM purchase_order WHERE status='pending'")
@@ -922,9 +890,9 @@ def dashboard():
     total_suppliers = cursor.fetchone()[0]
 
     cursor.execute("""
-        SELECT c.category_name, COUNT(p.product_id) 
-        FROM category c 
-        LEFT JOIN product p ON c.category_id = p.category_id 
+        SELECT c.category_name, COUNT(p.product_id)
+        FROM category c
+        LEFT JOIN product p ON c.category_id = p.category_id
         GROUP BY c.category_id, c.category_name
     """)
     category_data = cursor.fetchall()
@@ -932,9 +900,9 @@ def dashboard():
     category_counts = [row[1] for row in category_data]
 
     cursor.execute("""
-        SELECT product_name, quantity_in_stock, reorder_level 
-        FROM product 
-        WHERE quantity_in_stock <= COALESCE(reorder_level, 10)
+        SELECT product_id, product_name, quantity_in_stock, reorder_level
+        FROM product
+        WHERE quantity_in_stock <= reorder_level
         ORDER BY quantity_in_stock ASC LIMIT 5
     """)
     low_stock_items = cursor.fetchall()
@@ -947,34 +915,27 @@ def dashboard():
     """)
     recent_activity = cursor.fetchall()
 
-    cursor.execute("SELECT * FROM product")
-    all_products = cursor.fetchall()
-
     conn.close()
-    
-    return render_template('dashboard.html', 
-                            total_products=total_products,
+    return render_template('dashboard.html', total_products=total_products,
                             low_stock_count=low_stock_count,
                             pending_orders=pending_orders,
                             total_suppliers=total_suppliers,
                             category_names=category_names,
                             category_counts=category_counts,
                             low_stock_items=low_stock_items,
-                            recent_activity=recent_activity,
-                            all_products=all_products)
+                            recent_activity=recent_activity)
+
+# ==================== REPORTS ====================
 
 @app.route('/reports')
 def reports():
-    if 'user_id' not in session:
-        return redirect('/login')
-    
     conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT product_name, quantity_in_stock, reorder_level 
-        FROM product 
-        WHERE quantity_in_stock <= COALESCE(reorder_level, 10)
+        SELECT product_name, quantity_in_stock, reorder_level
+        FROM product
+        WHERE quantity_in_stock <= reorder_level
     """)
     low_stock_report = cursor.fetchall()
 
@@ -987,11 +948,13 @@ def reports():
     return render_template('reports.html', low_stock_report=low_stock_report,
                             total_value=total_value, total_units=total_units)
 
+# ==================== SETTINGS ====================
+
 @app.route('/settings')
 def settings():
-    if 'user_id' not in session:
-        return redirect('/login')
     return render_template('settings.html')
+
+# ==================== RUN APP ====================
 
 if __name__ == '__main__':
     app.run(debug=True)

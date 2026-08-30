@@ -17,7 +17,7 @@
         <div class="stat-card">
             <div class="stat-icon" style="background:#DC2626;"><i class="bi bi-exclamation-triangle"></i></div>
             <div>
-                <div class="stat-number">6</div>
+                <div class="stat-number">{{ low_stock_count }}</div>
                 <div class="stat-label">Low Stock Items</div>
             </div>
         </div>
@@ -36,7 +36,6 @@
     </div>
 </div>
 
-<!-- Categories Summary -->
 <div class="card p-4 mb-4">
     <h5 class="mb-3">📂 Products by Category</h5>
     <div class="row g-3">
@@ -59,8 +58,11 @@
             {% if low_stock_items %}
                 {% for item in low_stock_items %}
                 <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom: 1px solid #F1F5F9;">
-                    <span>{% if item[1] <= 2 %}🔴{% else %}🟡{% endif %} {{ item[0] }}</span>
-                    <span class="text-muted" style="font-size:0.85rem;">Only {{ item[1] }} left</span>
+                    <span>{% if item[2] <= 2 %}🔴{% else %}🟡{% endif %} {{ item[1] }}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted" style="font-size:0.85rem;">Only {{ item[2] }} left</span>
+                        <a href="/add-purchase-order?product_id={{ item[0] }}&quantity={{ item[3] * 2 }}" class="btn btn-sm btn-outline-primary">Reorder</a>
+                    </div>
                 </div>
                 {% endfor %}
             {% else %}
@@ -92,5 +94,30 @@
     <a href="/add-purchase-order" class="btn btn-outline-primary me-2">+ Create Purchase Order</a>
     <a href="/add-stock-transaction" class="btn btn-outline-primary">+ Record Stock Transaction</a>
 </div>
+
+<div class="card p-4 mt-4">
+    <h5 class="mb-3">📊 Products by Category (Chart)</h5>
+    <canvas id="categoryChart" height="90"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('categoryChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ category_names | tojson }},
+        datasets: [{
+            label: 'Products',
+            data: {{ category_counts | tojson }},
+            backgroundColor: '#089BAB',
+            borderRadius: 6
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+});
+</script>
 
 {% endblock %}
