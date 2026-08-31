@@ -142,17 +142,23 @@
     </style>
 </head>
 <body>
-    <div class="sidebar">
+        <div class="sidebar">
         <div class="sidebar-brand"><i class="bi bi-box-seam-fill"></i> InvenTrack</div>
+        {% if session.get('role') == 'admin' %}
         <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
-        <a href="/view-products" class="{% if 'product' in request.path %}active{% endif %}"><i class="bi bi-basket3"></i> Products</a>
+        <a href="/view-products" class="{% if 'view-product' in request.path or request.path.startswith('/product/') or 'edit-product' in request.path or 'add-product' in request.path %}active{% endif %}"><i class="bi bi-basket3"></i> Products</a>
         <a href="/view-categories" class="{% if 'categor' in request.path %}active{% endif %}"><i class="bi bi-tags"></i> Categories</a>
         <a href="/view-suppliers" class="{% if 'supplier' in request.path %}active{% endif %}"><i class="bi bi-truck"></i> Suppliers</a>
         <a href="/view-purchase-orders" class="{% if 'purchase-order' in request.path %}active{% endif %}"><i class="bi bi-receipt"></i> Purchase Orders</a>
         <a href="/view-stock-transactions" class="{% if 'stock-transaction' in request.path %}active{% endif %}"><i class="bi bi-arrow-left-right"></i> Stock Transactions</a>
-        <a href="/view-users" class="{% if 'user' in request.path %}active{% endif %}"><i class="bi bi-people"></i> Users</a>
+        <a href="/view-users" class="{% if request.path.startswith('/view-users') or 'edit-user' in request.path or 'add-user' in request.path %}active{% endif %}"><i class="bi bi-people"></i> Users</a>
+        <a href="/login-activity" class="{% if 'login-activity' in request.path %}active{% endif %}"><i class="bi bi-clock-history"></i> Login Activity</a>
         <a href="/reports" class="{% if 'reports' in request.path %}active{% endif %}"><i class="bi bi-graph-up"></i> Reports</a>
         <a href="/settings" class="{% if 'settings' in request.path %}active{% endif %}"><i class="bi bi-gear"></i> Settings</a>
+        {% else %}
+        <a href="/user/dashboard" class="{% if request.path == '/user/dashboard' %}active{% endif %}"><i class="bi bi-speedometer2"></i> My Dashboard</a>
+        <a href="/user/history" class="{% if 'history' in request.path %}active{% endif %}"><i class="bi bi-clock-history"></i> My History</a>
+        {% endif %}
 
         <div style="position: absolute; bottom: 20px; width: 100%; padding: 0 22px;">
             <div style="font-size: 0.85rem; color: #A8B4CC; margin-bottom: 8px;">
@@ -163,7 +169,6 @@
             </a>
         </div>
     </div>
-
     <div class="top-header">
         <div style="font-weight: 600; color: var(--text);">
             <i class="bi bi-box-seam-fill" style="color: var(--teal);"></i> InvenTrack

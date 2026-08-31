@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Checkout Product</h2>
+<p class="text-muted mb-3">Reserve this item for yourself.</p>
+<div class="card p-4" style="max-width: 500px;">
+    <h5 class="mb-1">{{ product[1] }}</h5>
+    <p class="text-muted" style="font-size:0.85rem;">SKU: {{ product[2] or '—' }} &middot; Rs. {{ "{:,.0f}".format(product[4]) }}</p>
+    <form method="POST">
+        <div class="mb-3"><label class="form-label">Purpose</label>
+        <input type="text" class="form-control" name="purpose" placeholder="e.g., Client demo, project use" required></div>
+        <div class="mb-3"><label class="form-label">Due Date (when will you return it?)</label>
+        <input type="date" class="form-control" name="due_date" min="{{ today }}" required></div>
+        <button type="submit" class="btn btn-primary">Confirm Checkout</button>
+        <a href="/user/dashboard" class="btn btn-outline-primary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

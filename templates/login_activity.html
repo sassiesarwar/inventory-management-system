@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Login Activity</h2>
+    <p>Who logged in, and when</p>
+</div>
+
+<div class="card p-4">
+    {% if logs|length == 0 %}
+    <div class="empty-state">
+        <i class="bi bi-clock-history"></i>
+        <p>No login activity recorded yet.</p>
+    </div>
+    {% else %}
+    <table class="table table-hover">
+        <thead>
+            <tr><th>Username</th><th>Email</th><th>Role</th><th>Login Time</th></tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td class="fw-medium">{{ log[1] }}</td>
+                <td>{{ log[2] }}</td>
+                <td><span class="badge" style="background:#DBEAFE;color:#1E40AF;">{{ log[3]|capitalize }}</span></td>
+                <td>{{ log[4] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Return Product</h2>
+<p class="text-muted mb-3">Record the return of a checked-out item.</p>
+<div class="card p-4" style="max-width: 500px;">
+    <h5 class="mb-1">{{ checkout[10] }}</h5>
+    <p class="text-muted" style="font-size:0.85rem;">Checked out on {{ checkout[3] }} &middot; Due {{ checkout[4] }}</p>
+    <form method="POST">
+        <div class="mb-3"><label class="form-label">Condition on Return</label>
+        <select class="form-select" name="condition" required>
+            <option value="Good">Good</option>
+            <option value="Minor damage">Minor damage</option>
+            <option value="Damaged">Damaged</option>
+        </select></div>
+        <div class="mb-3"><label class="form-label">Notes</label>
+        <textarea class="form-control" name="notes" rows="2" placeholder="Optional notes"></textarea></div>
+        <button type="submit" class="btn btn-primary">Confirm Return</button>
+        <a href="/user/dashboard" class="btn btn-outline-primary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

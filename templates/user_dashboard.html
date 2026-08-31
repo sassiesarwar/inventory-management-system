@@ -126,13 +126,16 @@
                     {% else %}📦{% endif %}
                 </div>
                 <h6>{{ product[1] }}</h6>
-                <div class="text-muted" style="font-size:0.8rem;">{{ product[11] or 'No category' }}</div>
+                <div class="text-muted" style="font-size:0.8rem;">{{ product[4] or 'No category' }}</div>
                 <div class="d-flex justify-content-between align-items-center mt-2">
-                    <span class="fw-bold" style="color:#089BAB;">Rs. {{ "{:,.0f}".format(product[4]) }}</span>
+                    <span class="fw-bold" style="color:#089BAB;">Rs. {{ "{:,.0f}".format(product[2]) }}</span>
                     <span class="badge" style="background:#DCFCE7;color:#059669;">
-                        {{ product[9] }} available
+                        {{ product[3] }} available
                     </span>
                 </div>
+                <a href="/checkout/{{ product[0] }}" class="btn btn-sm btn-primary w-100 mt-2">
+                    <i class="bi bi-cart-plus"></i> Checkout
+                </a>
             </div>
         </div>
         {% endfor %}

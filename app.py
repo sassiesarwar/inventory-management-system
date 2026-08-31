@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, flash, session
 import mysql.connector
 from dotenv import load_dotenv
 import os
+from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date
 
@@ -50,6 +51,15 @@ def dev_login(role):
     session['username'] = user[1]
     session['role'] = user[4]
     return redirect('/dashboard' if role == 'admin' else '/user/dashboard')
+
+def admin_required(f):
+    """Blocks staff from accessing admin-only pages, even by typing the URL directly."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if session.get('role') != 'admin':
+            return render_template('access_denied.html'), 403
+        return f(*args, **kwargs)
+    return decorated
 
 # ==================== DATABASE CONNECTION ====================
 def get_db_connection():
@@ -127,12 +137,29 @@ def inject_notifications():
 
 
 @app.route('/notifications')
+@admin_required
 def notifications_page():
     notifs = build_notifications()
     return render_template('notifications.html', notifications=notifs, notification_count=len(notifs))
 
 
+@app.route('/login-activity')
+@admin_required
+def login_activity():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT log_id, username, email, role, login_time
+        FROM login_log
+        ORDER BY login_time DESC
+    """)
+    logs = cursor.fetchall()
+    conn.close()
+    return render_template('login_activity.html', logs=logs)
+
+
 @app.route('/product/<int:id>')
+@admin_required
 def product_detail(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -199,9 +226,15 @@ def login():
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM user WHERE email=%s", (email,))
         user = cursor.fetchone()
-        conn.close()
 
         if user and check_password_hash(user[2], password):
+            cursor.execute(
+                "INSERT INTO login_log (user_id, username, email, role) VALUES (%s, %s, %s, %s)",
+                (user[0], user[1], user[5], user[4])
+            )
+            conn.commit()
+            conn.close()
+
             session['user_id'] = user[0]
             session['username'] = user[1]
             session['role'] = user[4]
@@ -211,6 +244,7 @@ def login():
             else:
                 return redirect('/user/dashboard')
         else:
+            conn.close()
             return render_template('login.html', error='Invalid email or password')
 
     return render_template('login.html')
@@ -415,6 +449,7 @@ def user_history():
 # ==================== PRODUCT ROUTES ====================
 
 @app.route('/add-product', methods=['GET', 'POST'])
+@admin_required
 def add_product():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -446,6 +481,7 @@ def add_product():
     return render_template('add_product.html', categories=categories)
 
 @app.route('/view-products')
+@admin_required
 def view_products():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -462,6 +498,7 @@ def view_products():
                             low_stock_count=low_stock_count, total_stock_units=total_stock_units)
 
 @app.route('/edit-product/<int:id>', methods=['GET', 'POST'])
+@admin_required
 def edit_product(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -499,6 +536,7 @@ def edit_product(id):
     return render_template('edit_product.html', product=product, categories=categories)
 
 @app.route('/delete-product/<int:id>')
+@admin_required
 def delete_product(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -511,6 +549,7 @@ def delete_product(id):
 # ==================== CATEGORY ROUTES ====================
 
 @app.route('/add-category', methods=['GET', 'POST'])
+@admin_required
 def add_category():
     if request.method == 'POST':
         category_name = request.form['category_name']
@@ -530,6 +569,7 @@ def add_category():
     return render_template('add_category.html')
 
 @app.route('/view-categories')
+@admin_required
 def view_categories():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -551,6 +591,7 @@ def view_categories():
     return render_template('view_categories.html', categories=categories, products_by_category=products_by_category)
 
 @app.route('/edit-category/<int:id>', methods=['GET', 'POST'])
+@admin_required
 def edit_category(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -574,6 +615,7 @@ def edit_category(id):
     return render_template('edit_category.html', category=category)
 
 @app.route('/delete-category/<int:id>')
+@admin_required
 def delete_category(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -610,6 +652,7 @@ def add_supplier():
     return render_template('add_supplier.html')
 
 @app.route('/view-suppliers')
+@admin_required
 def view_suppliers():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -619,6 +662,7 @@ def view_suppliers():
     return render_template('view_suppliers.html', suppliers=suppliers)
 
 @app.route('/edit-supplier/<int:id>', methods=['GET', 'POST'])
+@admin_required
 def edit_supplier(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -648,6 +692,7 @@ def edit_supplier(id):
     return render_template('edit_supplier.html', supplier=supplier)
 
 @app.route('/delete-supplier/<int:id>')
+@admin_required
 def delete_supplier(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -660,6 +705,7 @@ def delete_supplier(id):
 # ==================== PURCHASE ORDER ROUTES ====================
 
 @app.route('/add-purchase-order', methods=['GET', 'POST'])
+@admin_required
 def add_purchase_order():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -717,6 +763,7 @@ def view_purchase_orders():
     return render_template('view_purchase_orders.html', orders=orders)
 
 @app.route('/receive-purchase-order/<int:id>')
+@admin_required
 def receive_purchase_order(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -745,6 +792,7 @@ def receive_purchase_order(id):
 # ==================== USER MANAGEMENT ROUTES (ADMIN) ====================
 
 @app.route('/add-user', methods=['GET', 'POST'])
+@admin_required
 def add_user():
     if request.method == 'POST':
         username = request.form['username']
@@ -769,6 +817,7 @@ def add_user():
     return render_template('add_user.html')
 
 @app.route('/view-users')
+@admin_required
 def view_users():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -778,6 +827,7 @@ def view_users():
     return render_template('view_users.html', users=users)
 
 @app.route('/edit-user/<int:id>', methods=['GET', 'POST'])
+@admin_required
 def edit_user(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -803,6 +853,7 @@ def edit_user(id):
     return render_template('edit_user.html', user=user)
 
 @app.route('/delete-user/<int:id>')
+@admin_required
 def delete_user(id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -815,6 +866,7 @@ def delete_user(id):
 # ==================== STOCK TRANSACTION ROUTES ====================
 
 @app.route('/add-stock-transaction', methods=['GET', 'POST'])
+@admin_required
 def add_stock_transaction():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -856,6 +908,7 @@ def add_stock_transaction():
     return render_template('add_stock_transaction.html', products=products)
 
 @app.route('/view-stock-transactions')
+@admin_required
 def view_stock_transactions():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -873,6 +926,7 @@ def view_stock_transactions():
 # ==================== DASHBOARD (ADMIN) ====================
 
 @app.route('/dashboard')
+@admin_required
 def dashboard():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -928,6 +982,7 @@ def dashboard():
 # ==================== REPORTS ====================
 
 @app.route('/reports')
+@admin_required
 def reports():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -951,6 +1006,7 @@ def reports():
 # ==================== SETTINGS ====================
 
 @app.route('/settings')
+@admin_required
 def settings():
     return render_template('settings.html')
 
