@@ -4,6 +4,12 @@
     <div><h2>Stock Transactions</h2><p>History of all inventory movements</p></div>
     <a href="/add-stock-transaction" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Record Transaction</a>
 </div>
+{% if transactions|length > 0 %}
+<div class="card p-4 mb-4">
+    <h5 class="mb-3">📈 Stock Movement Over Time</h5>
+    <canvas id="stockChart" height="80"></canvas>
+</div>
+{% endif %}
 {% if transactions|length == 0 %}
 <div class="empty-state card">
     <i class="bi bi-arrow-left-right"></i>
@@ -25,4 +31,39 @@
     </tbody>
 </table>
 {% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% if transactions|length > 0 %}
+new Chart(document.getElementById('stockChart'), {
+    type: 'line',
+    data: {
+        labels: {{ chart_labels | tojson }},
+        datasets: [
+            {
+                label: 'Stock IN',
+                data: {{ chart_in | tojson }},
+                borderColor: '#059669',
+                backgroundColor: 'rgba(5,150,105,0.1)',
+                tension: 0.3,
+                fill: true
+            },
+            {
+                label: 'Stock OUT',
+                data: {{ chart_out | tojson }},
+                borderColor: '#DC2626',
+                backgroundColor: 'rgba(220,38,38,0.1)',
+                tension: 0.3,
+                fill: true
+            }
+        ]
+    },
+    options: {
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { beginAtZero: true } }
+    }
+});
+{% endif %}
+</script>
+
 {% endblock %}

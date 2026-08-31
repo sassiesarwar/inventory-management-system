@@ -628,6 +628,7 @@ def delete_category(id):
 # ==================== SUPPLIER ROUTES ====================
 
 @app.route('/add-supplier', methods=['GET', 'POST'])
+@admin_required
 def add_supplier():
     if request.method == 'POST':
         supplier_name = request.form['supplier_name']
@@ -746,6 +747,7 @@ def add_purchase_order():
                             prefill_product_id=prefill_product_id, prefill_quantity=prefill_quantity)
 
 @app.route('/view-purchase-orders')
+@admin_required
 def view_purchase_orders():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -920,9 +922,23 @@ def view_stock_transactions():
         ORDER BY st.transaction_date DESC
     """)
     transactions = cursor.fetchall()
-    conn.close()
-    return render_template('view_stock_transactions.html', transactions=transactions)
 
+    cursor.execute("""
+        SELECT DATE(transaction_date) AS day,
+               SUM(CASE WHEN transaction_type='IN' THEN quantity ELSE 0 END) AS stock_in,
+               SUM(CASE WHEN transaction_type='OUT' THEN quantity ELSE 0 END) AS stock_out
+        FROM stock_transaction
+        GROUP BY DATE(transaction_date)
+        ORDER BY day ASC
+    """)
+    daily = cursor.fetchall()
+    chart_labels = [str(row[0]) for row in daily]
+    chart_in = [row[1] for row in daily]
+    chart_out = [row[2] for row in daily]
+
+    conn.close()
+    return render_template('view_stock_transactions.html', transactions=transactions,
+                            chart_labels=chart_labels, chart_in=chart_in, chart_out=chart_out)
 # ==================== DASHBOARD (ADMIN) ====================
 
 @app.route('/dashboard')

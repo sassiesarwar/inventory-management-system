@@ -23,6 +23,17 @@
     <a href="/add-category" class="btn btn-primary">+ Add Category</a>
 </div>
 {% else %}
+
+<div class="card p-3 mb-3">
+    <div class="input-group">
+        <span class="input-group-text bg-white border-end-0">
+            <i class="bi bi-search text-muted"></i>
+        </span>
+        <input type="text" class="form-control border-start-0" id="categorySearchBox"
+               placeholder="Search categories by name..." onkeyup="filterCategories()">
+    </div>
+</div>
+
 <div class="card">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -37,7 +48,7 @@
             </thead>
             <tbody>
                 {% for cat in categories %}
-                <tr>
+                <tr data-cat-name="{{ cat[1]|lower }}">
                     <td>{{ cat[0] }}</td>
                     <td>
                         <a href="#" data-bs-toggle="collapse" data-bs-target="#products-{{ cat[0] }}"
@@ -114,5 +125,22 @@
         </table>
     </div>
 </div>
+
+<script>
+function filterCategories() {
+    var searchText = document.getElementById('categorySearchBox').value.toLowerCase().trim();
+    var rows = document.querySelectorAll('tr[data-cat-name]');
+    rows.forEach(function(row) {
+        var name = row.getAttribute('data-cat-name') || '';
+        var show = !searchText || name.includes(searchText);
+        row.style.display = show ? '' : 'none';
+        var nextRow = row.nextElementSibling;
+        if (nextRow && nextRow.classList.contains('collapse')) {
+            nextRow.style.display = show ? '' : 'none';
+        }
+    });
+}
+</script>
+
 {% endif %}
 {% endblock %}
