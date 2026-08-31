@@ -139,6 +139,23 @@
             margin-bottom: 8px;
             color: #CBD5E1;
         }
+
+        /* ==== Day 4: Visual Polish ==== */
+        .card, .btn-primary, .btn-outline-primary, .btn-outline-danger, .stat-card, table.table tbody tr {
+            transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+        }
+        .card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.07); }
+        .stat-card:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.08); transform: translateY(-2px); }
+        .btn-primary:active, .btn-outline-primary:active { transform: scale(0.97); }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+        .empty-state {
+            background: linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 100%);
+            border-radius: 14px;
+        }
+        .empty-state .btn-primary { padding: 10px 26px; }
+        .badge { letter-spacing: 0.01em; }
     </style>
 </head>
 <body>
