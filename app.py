@@ -1021,11 +1021,58 @@ def reports():
 
 # ==================== SETTINGS ====================
 
-@app.route('/settings')
+@app.route('/settings', methods=['GET', 'POST'])
 @admin_required
 def settings():
-    return render_template('settings.html')
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
+    if request.method == 'POST':
+        org_name = request.form.get('org_name', '').strip()
+        alert_low_stock = 1 if request.form.get('alert_low_stock') else 0
+        alert_pending_orders = 1 if request.form.get('alert_pending_orders') else 0
+        alert_overdue = 1 if request.form.get('alert_overdue') else 0
+
+        cursor.execute("SELECT setting_id FROM settings LIMIT 1")
+        existing = cursor.fetchone()
+
+        if existing:
+            cursor.execute("""
+                UPDATE settings
+                SET org_name = %s, alert_low_stock = %s,
+                    alert_pending_orders = %s, alert_overdue = %s
+                WHERE setting_id = %s
+            """, (org_name, alert_low_stock, alert_pending_orders, alert_overdue, existing[0]))
+        else:
+            cursor.execute("""
+                INSERT INTO settings (org_name, alert_low_stock, alert_pending_orders, alert_overdue)
+                VALUES (%s, %s, %s, %s)
+            """, (org_name, alert_low_stock, alert_pending_orders, alert_overdue))
+
+        conn.commit()
+        conn.close()
+        flash('Settings updated successfully!')
+        return redirect('/settings')
+
+    cursor.execute("""
+        SELECT org_name, alert_low_stock, alert_pending_orders, alert_overdue
+        FROM settings LIMIT 1
+    """)
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        org_name, alert_low_stock, alert_pending_orders, alert_overdue = row
+    else:
+        org_name, alert_low_stock, alert_pending_orders, alert_overdue = 'InvenTrack Electronics', 1, 1, 1
+
+    return render_template(
+        'settings.html',
+        org_name=org_name,
+        alert_low_stock=alert_low_stock,
+        alert_pending_orders=alert_pending_orders,
+        alert_overdue=alert_overdue
+    )
 # ==================== RUN APP ====================
 
 if __name__ == '__main__':
