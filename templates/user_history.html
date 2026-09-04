@@ -14,10 +14,10 @@
         <tbody>
             {% for h in history %}
             <tr>
-                <td class="fw-medium">{{ h[10] }}</td>
+                <td class="fw-medium">{{ h[11] }}</td>
                 <td>{{ h[3] }}</td>
                 <td>{{ h[4] }}</td>
-                <td>{{ h[6] or '—' }}</td>
+                <td>{{ h[7] or '—' }}</td>
                 <td>
                     {% if h[5] == 'returned' %}
                         <span class="badge" style="background:#DCFCE7;color:#059669;">Returned</span>
@@ -27,7 +27,7 @@
                         <span class="badge" style="background:#FEF3C7;color:#92400E;">Checked Out</span>
                     {% endif %}
                 </td>
-                <td>Rs. {{ "{:,.0f}".format(h[11]) }}</td>
+                <td>Rs. {{ "{:,.0f}".format(h[12]|float) }}</td>
             </tr>
             {% endfor %}
         </tbody>

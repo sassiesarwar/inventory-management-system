@@ -16,7 +16,7 @@
     </select></div>
     <div class="mb-3"><label class="form-label">Email</label>
     <input type="email" class="form-control" name="email" placeholder="name@example.com"></div>
-    <button type="submit" class="btn btn-primary">Add User</button>
+    <button type="submit" class="btn btn-primary" onclick="this.disabled=true; this.form.submit();">Add User</button>
     <a href="/view-users" class="btn btn-outline-primary">Cancel</a>
 </form>
 </div>

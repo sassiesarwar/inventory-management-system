@@ -18,7 +18,7 @@
     <input type="number" class="form-control" name="quantity" placeholder="e.g., 10" required></div>
     <div class="mb-3"><label class="form-label">Reference/Reason</label>
     <input type="text" class="form-control" name="reference" placeholder="e.g., New stock arrival, Sold to customer"></div>
-    <button type="submit" class="btn btn-primary">Record Transaction</button>
+    <button type="submit" class="btn btn-primary" onclick="this.disabled=true; this.form.submit();">Record Transaction</button>
     <a href="/view-stock-transactions" class="btn btn-outline-primary">Cancel</a>
 </form>
 </div>

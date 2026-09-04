@@ -7,7 +7,7 @@
     <input type="text" class="form-control" name="category_name" required></div>
     <div class="mb-3"><label class="form-label">Description</label>
     <input type="text" class="form-control" name="description"></div>
-    <button type="submit" class="btn btn-primary">Add Category</button>
+    <button type="submit" class="btn btn-primary" onclick="this.disabled=true; this.form.submit();">Add Category</button>
 </form>
 </div>
 {% endblock %}
