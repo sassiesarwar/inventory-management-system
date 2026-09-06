@@ -4,14 +4,13 @@ from dotenv import load_dotenv
 import os
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import date
+from datetime import date, datetime
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-only-change-this")
 
-# ==================== LOGIN REQUIREMENT ====================
 DEV_MODE = os.getenv("DEV_MODE", "false").lower() == "true"
 
 @app.before_request
@@ -61,7 +60,6 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated
 
-# ==================== DATABASE CONNECTION ====================
 def get_db_connection():
     connection = mysql.connector.connect(
         host=os.getenv("DB_HOST", "localhost"),
@@ -179,7 +177,6 @@ def product_detail(id):
     conn.close()
     return render_template('product_detail.html', product=product, related_products=related_products)
 
-# ==================== AUTH ROUTES ====================
 @app.route('/forgot-password')
 def forgot_password():
     return render_template('forgot_password.html')
@@ -270,7 +267,6 @@ def test_db():
     except Exception as e:
         return f"Database connection failed: {str(e)}"
 
-# ==================== USER (STAFF) ROUTES ====================
 
 @app.route('/user/dashboard')
 def user_dashboard():
@@ -328,7 +324,7 @@ def checkout_product(product_id):
         flash('Product not found!', 'error')
         return redirect('/user/dashboard')
 
-    if product[8] <= 0:  # available_quantity column
+    if product[8] <= 0:  
         conn.close()
         flash('This product is currently not available!', 'error')
         return redirect('/user/dashboard')
@@ -446,7 +442,6 @@ def user_history():
     conn.close()
     return render_template('user_history.html', history=history)
 
-# ==================== PRODUCT ROUTES ====================
 
 @app.route('/add-product', methods=['GET', 'POST'])
 @admin_required
@@ -546,7 +541,6 @@ def delete_product(id):
     flash('Product deleted successfully!')
     return redirect('/view-products')
 
-# ==================== CATEGORY ROUTES ====================
 
 @app.route('/add-category', methods=['GET', 'POST'])
 @admin_required
@@ -625,7 +619,6 @@ def delete_category(id):
     flash('Category deleted successfully!')
     return redirect('/view-categories')
 
-# ==================== SUPPLIER ROUTES ====================
 
 @app.route('/add-supplier', methods=['GET', 'POST'])
 @admin_required
@@ -703,7 +696,6 @@ def delete_supplier(id):
     flash('Supplier deleted successfully!')
     return redirect('/view-suppliers')
 
-# ==================== PURCHASE ORDER ROUTES ====================
 
 @app.route('/add-purchase-order', methods=['GET', 'POST'])
 @admin_required
@@ -770,8 +762,14 @@ def receive_purchase_order(id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("UPDATE purchase_order SET status='received' WHERE purchase_order_id=%s", (id,))
+    cursor.execute("SELECT status FROM purchase_order WHERE purchase_order_id=%s", (id,))
+    current_status = cursor.fetchone()[0]
+    if current_status == 'received':
+        conn.close()
+        flash('This purchase order has already been received.', 'warning')
+        return redirect('/view-purchase-orders')
 
+    cursor.execute("UPDATE purchase_order SET status='received' WHERE purchase_order_id=%s", (id,))
     cursor.execute("SELECT product_id, quantity FROM purchase_order_item WHERE purchase_order_id=%s", (id,))
     items = cursor.fetchall()
 
@@ -791,7 +789,6 @@ def receive_purchase_order(id):
     flash('✅ Purchase order marked as received — stock updated automatically!')
     return redirect('/view-purchase-orders')
 
-# ==================== USER MANAGEMENT ROUTES (ADMIN) ====================
 
 @app.route('/add-user', methods=['GET', 'POST'])
 @admin_required
@@ -865,7 +862,6 @@ def delete_user(id):
     flash('User deleted successfully!')
     return redirect('/view-users')
 
-# ==================== STOCK TRANSACTION ROUTES ====================
 
 @app.route('/add-stock-transaction', methods=['GET', 'POST'])
 @admin_required
@@ -939,7 +935,6 @@ def view_stock_transactions():
     conn.close()
     return render_template('view_stock_transactions.html', transactions=transactions,
                             chart_labels=chart_labels, chart_in=chart_in, chart_out=chart_out)
-# ==================== DASHBOARD (ADMIN) ====================
 
 @app.route('/dashboard')
 @admin_required
@@ -995,8 +990,6 @@ def dashboard():
                             low_stock_items=low_stock_items,
                             recent_activity=recent_activity)
 
-# ==================== REPORTS ====================
-
 @app.route('/reports')
 @admin_required
 def reports():
@@ -1015,11 +1008,17 @@ def reports():
     total_value = result[0] or 0
     total_units = result[1] or 0
 
+    cursor.execute("SELECT org_name FROM settings LIMIT 1")
+    org_row = cursor.fetchone()
+    org_name = org_row[0] if org_row else 'InvenTrack Electronics'
+
     conn.close()
     return render_template('reports.html', low_stock_report=low_stock_report,
-                            total_value=total_value, total_units=total_units)
-
-# ==================== SETTINGS ====================
+                            total_value=total_value, total_units=total_units,
+                            org_name=org_name,
+                            generated_by=session.get('username'),
+                                                        generated_date=datetime.now().strftime('%d %B %Y'),
+                            generated_time=datetime.now().strftime('%I:%M %p'))
 
 @app.route('/settings', methods=['GET', 'POST'])
 @admin_required
@@ -1073,7 +1072,6 @@ def settings():
         alert_pending_orders=alert_pending_orders,
         alert_overdue=alert_overdue
     )
-# ==================== RUN APP ====================
 
 if __name__ == '__main__':
     app.run(debug=True)

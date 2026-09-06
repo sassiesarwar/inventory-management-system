@@ -48,7 +48,13 @@
                 <i class="bi bi-calendar"></i>
             </div>
             <div>
-                <div class="stat-number">{% if my_items %}{{ my_items[0][5] }}{% else %}0{% endif %}</div>
+                <div class="stat-number">
+                    {% if my_items %}
+                        {{ (my_items[0][4] - today).days }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </div>
                 <div class="stat-label">Days Until Due</div>
             </div>
         </div>
@@ -73,7 +79,7 @@
             <tbody>
                 {% for item in my_items %}
                 <tr>
-                    <td><strong>{{ item[10] }}</strong></td>
+                    <td><strong>{{ item[11] }}</strong></td>
                     <td>{{ item[3] }}</td>
                     <td>
                         {% if item[4] < today %}

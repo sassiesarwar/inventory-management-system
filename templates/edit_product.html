@@ -9,13 +9,20 @@
     <input type="text" class="form-control" name="sku" value="{{ product[2] or '' }}"></div>
     <div class="mb-3"><label class="form-label">Description</label>
     <textarea class="form-control" name="description" rows="2">{{ product[7] or '' }}</textarea></div>
+    <div class="mb-3"><label class="form-label">Category</label>
+    <select class="form-select" name="category_id">
+        <option value="">-- Select Category (optional) --</option>
+        {% for cat in categories %}
+        <option value="{{ cat[0] }}" {% if product[3] == cat[0] %}selected{% endif %}>{{ cat[1] }}</option>
+        {% endfor %}
+    </select></div>
     <div class="mb-3"><label class="form-label">Unit Price (Rs.)</label>
     <input type="number" step="0.01" min="0" class="form-control" name="unit_price" value="{{ product[4] }}" required></div>
     <div class="mb-3"><label class="form-label">Quantity in Stock</label>
     <input type="number" min="0" class="form-control" name="quantity_in_stock" value="{{ product[5] }}" required></div>
     <div class="mb-3"><label class="form-label">Image URL (optional)</label>
-    <input type="url" class="form-control" name="image_url" value="{{ product[10] or '' }}" placeholder="https://example.com/image.jpg"></div>
-    <button type="submit" class="btn btn-primary">Update Product</button>
+    <input type="url" class="form-control" name="image_url" value="{{ product[9] or '' }}" placeholder="https://example.com/image.jpg"></div>
+    <button type="submit" class="btn btn-primary" onclick="this.disabled=true; this.form.submit();">Update Product</button>
     <a href="/view-products" class="btn btn-outline-primary">Cancel</a>
 </form>
 </div>
